@@ -1,0 +1,119 @@
+/*
+ * Design tokens. Components use only these variables, so a theme is a
+ * matter of redefining them. Dark values appear twice: once for the system
+ * preference (unless the user forced light) and once for a forced dark theme.
+ */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #f8f9fb;
+  --sunken: #eef1f4;
+  --ink: #131a22;
+  --ink-2: #2b3540;
+  --muted: #5d6a78;
+  --faint: #8995a2;
+  --line: #e3e7ec;
+  --line-strong: #cdd4dc;
+
+  --accent: #3355d1;
+  --accent-hover: #2a48b8;
+  --accent-ink: #ffffff;
+  --accent-soft: #e9eefc;
+  --focus: #3355d1;
+
+  --del-bg: #fdecea;
+  --del-strong: #f7bdb6;
+  --del-ink: #a3241a;
+  --add-bg: #e1f5e8;
+  --add-strong: #a3dcb7;
+  --add-ink: #13693d;
+  --chg: #d99a06;
+
+  --match-a: #fde68a;
+  --match-b: #bae6fd;
+  --match-current: #f59e0b;
+
+  --shadow-1: 0 1px 2px rgb(16 24 40 / 0.05);
+  --shadow-2: 0 1px 2px rgb(16 24 40 / 0.04), 0 4px 12px -2px rgb(16 24 40 / 0.08);
+  --shadow-pop: 0 12px 32px -8px rgb(16 24 40 / 0.22), 0 2px 6px rgb(16 24 40 / 0.08);
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+
+  --font-ui: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-doc: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --fast: 120ms;
+  --sidebar: 236px;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0e1217;
+    --surface: #161b22;
+    --surface-2: #1a2028;
+    --sunken: #11161c;
+    --ink: #e6ebf1;
+    --ink-2: #c9d1da;
+    --muted: #94a1af;
+    --faint: #6b7886;
+    --line: #262e38;
+    --line-strong: #36414d;
+    --accent: #7f9cff;
+    --accent-hover: #9bb2ff;
+    --accent-ink: #0b1220;
+    --accent-soft: #1d2640;
+    --focus: #7f9cff;
+    --del-bg: #3a1f21;
+    --del-strong: #6b2b2a;
+    --del-ink: #ffa59c;
+    --add-bg: #15301f;
+    --add-strong: #22603a;
+    --add-ink: #8adea8;
+    --chg: #e5a91a;
+    --match-a: #6b5310;
+    --match-b: #0f4c66;
+    --match-current: #b7791f;
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-2: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px -2px rgb(0 0 0 / 0.35);
+    --shadow-pop: 0 16px 40px -8px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.4);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #0e1217;
+  --surface: #161b22;
+  --surface-2: #1a2028;
+  --sunken: #11161c;
+  --ink: #e6ebf1;
+  --ink-2: #c9d1da;
+  --muted: #94a1af;
+  --faint: #6b7886;
+  --line: #262e38;
+  --line-strong: #36414d;
+  --accent: #7f9cff;
+  --accent-hover: #9bb2ff;
+  --accent-ink: #0b1220;
+  --accent-soft: #1d2640;
+  --focus: #7f9cff;
+  --del-bg: #3a1f21;
+  --del-strong: #6b2b2a;
+  --del-ink: #ffa59c;
+  --add-bg: #15301f;
+  --add-strong: #22603a;
+  --add-ink: #8adea8;
+  --chg: #e5a91a;
+  --match-a: #6b5310;
+  --match-b: #0f4c66;
+  --match-current: #b7791f;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-2: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px -2px rgb(0 0 0 / 0.35);
+  --shadow-pop: 0 16px 40px -8px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.4);
+  color-scheme: dark;
+}
