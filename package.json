@@ -1,0 +1,38 @@
+{
+  "name": "redline",
+  "private": true,
+  "version": "2.0.0",
+  "description": "A suite of fast, private, in-browser text tools: diff, case conversion, regex, word frequency and cleaning.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "release": "vite build && node scripts/release.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vite build && node --test tests/e2e/",
+    "check": "npm run typecheck && npm run lint && npm test"
+  },
+  "dependencies": {
+    "@preact/signals": "2.11.4",
+    "jszip": "3.10.2",
+    "preact": "10.29.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "globals": "16.5.0",
+    "playwright": "1.63.0",
+    "prettier": "3.9.10",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vite": "7.3.7",
+    "vite-plugin-singlefile": "2.3.4",
+    "vitest": "3.2.7"
+  }
+}
