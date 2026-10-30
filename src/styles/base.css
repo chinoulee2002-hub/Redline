@@ -3,6 +3,14 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  /*
+   * No ligatures anywhere: text must show exactly what was typed (JetBrains Mono would draw
+   * "<=" as "≤"), and the regex highlight layer must lay out exactly like its textarea.
+   * !important because every `font:` shorthand elsewhere would otherwise reset it.
+   */
+  font-feature-settings:
+    'liga' 0,
+    'calt' 0 !important;
 }
 html {
   -webkit-text-size-adjust: 100%;

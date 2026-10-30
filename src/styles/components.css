@@ -591,10 +591,18 @@ kbd {
   background: var(--accent-soft);
   color: var(--accent);
 }
+.palette__item > span {
+  white-space: nowrap;
+}
 .palette__item small {
-  margin-left: auto;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
   color: var(--faint);
   font-size: 12px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .palette__empty {
   padding: 18px;

@@ -46,7 +46,19 @@ export function CommandPalette({ activeId, onClose }: { activeId: string; onClos
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return all;
-    return all.filter((c) => `${c.label} ${c.hint ?? ''}`.toLowerCase().includes(q));
+    // Name matches rank above description matches; a name that starts with the query ranks highest.
+    const score = (c: Command) => {
+      const label = c.label.toLowerCase();
+      if (label.startsWith(q)) return 3;
+      if (label.split(/\s+/).some((w) => w.startsWith(q))) return 2;
+      if (label.includes(q)) return 1;
+      return (c.hint ?? '').toLowerCase().includes(q) ? 0 : -1;
+    };
+    return all
+      .map((c) => ({ c, s: score(c) }))
+      .filter((x) => x.s >= 0)
+      .sort((a, b) => b.s - a.s)
+      .map((x) => x.c);
   }, [all, query]);
 
   useEffect(() => input.current?.focus(), []);
@@ -98,7 +110,7 @@ export function CommandPalette({ activeId, onClose }: { activeId: string; onClos
               onClick={() => run(c)}
             >
               <Icon name={c.icon} size={18} />
-              {c.label}
+              <span>{c.label}</span>
               {c.hint && <small>{c.hint}</small>}
             </li>
           ))}
