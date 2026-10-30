@@ -1,0 +1,665 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Redline</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* Layout: two input panes side by side, a sticky results toolbar, then a comparison sheet that reads like a marked-up document. */
+:root {
+  --bg: #f1f4f7;
+  --surface: #ffffff;
+  --ink: #18212b;
+  --muted: #5a6877;
+  --line: #d8dee5;
+  --accent: #2d56c9;
+  --accent-ink: #ffffff;
+  --del-bg: #fde6e4;
+  --del-strong: #f6b4ae;
+  --del-ink: #9c2018;
+  --add-bg: #dcf3e4;
+  --add-strong: #9ad8b0;
+  --add-ink: #11663a;
+  --focus: #2d56c9;
+  --font-ui: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-doc: "Source Serif 4", Georgia, "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161c; --surface: #1a212a; --ink: #e5eaf0; --muted: #94a2b1; --line: #2c3743;
+    --accent: #85a6ff; --accent-ink: #0d1626;
+    --del-bg: #3a2122; --del-strong: #6e2c2a; --del-ink: #ffa49c;
+    --add-bg: #172f20; --add-strong: #23603a; --add-ink: #86dba5;
+    --focus: #85a6ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161c; --surface: #1a212a; --ink: #e5eaf0; --muted: #94a2b1; --line: #2c3743;
+  --accent: #85a6ff; --accent-ink: #0d1626;
+  --del-bg: #3a2122; --del-strong: #6e2c2a; --del-ink: #ffa49c;
+  --add-bg: #172f20; --add-strong: #23603a; --add-ink: #86dba5;
+  --focus: #85a6ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-ui);
+  padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+button, input, textarea, label { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 52ch; }
+
+.btn {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 7px 12px;
+  cursor: pointer; font-weight: 500; line-height: 1.2;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; padding: 10px 22px; font-size: 16px; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.link { border: 0; background: none; color: var(--accent); padding: 4px 6px; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+
+.inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pane { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.pane-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pane h2 { margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.pane h2 .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: var(--surface); font-size: 12px; font-weight: 700; }
+.pane-tools { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.drop { position: relative; }
+textarea {
+  width: 100%; min-height: 220px; resize: vertical; border: 1px dashed var(--line); border-radius: 8px;
+  background: var(--bg); padding: 12px; font: 16px/1.55 var(--font-doc); color: var(--ink);
+}
+textarea::placeholder { color: var(--muted); font-family: var(--font-ui); font-size: 14px; }
+.drop.over textarea { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--bg)); }
+.pane-foot { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 13px; flex-wrap: wrap; }
+.file-in { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+.actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.opts { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); }
+.opts label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.opts input { accent-color: var(--accent); width: 16px; height: 16px; }
+.msg { color: var(--del-ink); font-weight: 500; }
+
+#results { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 12px; }
+#results[hidden] { display: none; }
+.summary { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.stats { display: flex; gap: 8px 28px; flex-wrap: wrap; align-items: baseline; }
+.stat { display: flex; flex-direction: column; }
+.stat b { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.stat span { font-size: 13px; color: var(--muted); }
+.stat.add b { color: var(--add-ink); }
+.stat.del b { color: var(--del-ink); }
+.verdict { font-size: 16px; font-weight: 600; }
+.map { display: flex; height: 22px; gap: 1px; border-radius: 5px; overflow: hidden; background: var(--line); }
+.map button { border: 0; padding: 0; min-width: 3px; cursor: pointer; background: var(--surface); }
+.map button.eq { background: color-mix(in srgb, var(--muted) 22%, var(--surface)); cursor: default; }
+.map button.chg { background: #e3a008; }
+.map button.add { background: var(--add-ink); }
+.map button.del { background: var(--del-ink); }
+.map-key { display: flex; gap: 14px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
+.map-key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+.toolbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+  display: flex; gap: 10px 16px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+}
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg button { border: 0; background: none; padding: 6px 12px; cursor: pointer; font-weight: 500; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.nav { display: flex; align-items: center; gap: 6px; }
+.nav .count { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 6.5em; text-align: center; font-size: 14px; }
+.toolbar .opts { gap: 12px; }
+
+.sheet { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-family: var(--font-doc); font-size: 16.5px; line-height: 1.6; }
+.colhead { display: grid; grid-template-columns: 44px 1fr 44px 1fr; font: 600 13px var(--font-ui); color: var(--muted); border-bottom: 1px solid var(--line); background: var(--bg); }
+.colhead div { padding: 8px 12px; }
+.colhead div:nth-child(2) { grid-column: span 1; }
+.row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px minmax(0, 1fr); border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.row:first-of-type { border-top: 0; }
+.ln { font: 12px/2.2 var(--font-ui); color: var(--muted); text-align: right; padding: 0 8px 0 0; user-select: none; font-variant-numeric: tabular-nums; }
+.cell { padding: 3px 12px; white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; min-height: 1.6em; }
+.cell.l, .ln.ll { border-right: 0; }
+.row .ln.rn { border-left: 1px solid var(--line); padding-left: 0; }
+.row.chg .cell.l, .row.del .cell.l { background: var(--del-bg); }
+.row.chg .cell.r, .row.add .cell.r { background: var(--add-bg); }
+.cell.empty { background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--line) 50%, transparent) 6px 7px) !important; }
+del, ins { text-decoration-thickness: 1.5px; }
+del { background: var(--del-strong); color: var(--del-ink); text-decoration: line-through; border-radius: 3px; padding: 0 1px; }
+ins { background: var(--add-strong); color: var(--add-ink); text-decoration: underline; border-radius: 3px; padding: 0 1px; }
+.row.whole-l .cell.l { color: var(--del-ink); }
+.row.whole-r .cell.r { color: var(--add-ink); }
+.row.cur { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.tl { display: grid; grid-template-columns: 28px minmax(0, 1fr); border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.tl:first-child { border-top: 0; }
+.tl .mk { font: 700 14px/2 var(--font-ui); text-align: center; color: var(--muted); user-select: none; }
+.tl.del .cell { background: var(--del-bg); color: var(--del-ink); text-decoration: line-through; }
+.tl.add .cell { background: var(--add-bg); color: var(--add-ink); }
+.tl.del .mk { color: var(--del-ink); background: var(--del-bg); }
+.tl.add .mk { color: var(--add-ink); background: var(--add-bg); }
+.tl.chg .mk { color: #b07a00; }
+.tl.chg .cell { box-shadow: inset 3px 0 0 #e3a008; }
+.tl.cur { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.fold { display: block; width: 100%; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--bg); color: var(--accent); font: 500 13px var(--font-ui); padding: 6px; cursor: pointer; }
+.fold:hover { text-decoration: underline; }
+.same { padding: 40px 20px; text-align: center; font-family: var(--font-ui); }
+.same b { display: block; font-size: 18px; margin-bottom: 4px; }
+.same span { color: var(--muted); }
+.note { color: var(--muted); font-size: 13px; }
+
+@media (max-width: 760px) {
+  .inputs { grid-template-columns: 1fr; }
+  .colhead { display: none; }
+  .row { grid-template-columns: 34px minmax(0, 1fr); }
+  .row.eq .ln.rn, .row.eq .cell.r, .cell.empty, .ln.empty { display: none; }
+  .row .ln.rn { border-left: 0; }
+  .row.chg .cell.r, .row.add .cell.r { border-top: 1px dashed var(--line); }
+  .sheet { font-size: 16px; }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Redline</h1>
+      <p>Add the original text, then the new copy. See every word that was added, removed or reworded.</p>
+    </div>
+    <button class="btn" id="example" type="button">Load an example</button>
+  </header>
+
+  <section class="inputs" aria-label="Texts to compare">
+    <div class="pane" data-side="a">
+      <div class="pane-head">
+        <h2><span class="n">1</span>Original</h2>
+        <div class="pane-tools">
+          <button class="btn link" type="button" data-pick="a">Upload file</button>
+          <button class="btn link" type="button" data-clear="a">Clear</button>
+        </div>
+      </div>
+      <div class="drop" data-drop="a">
+        <textarea id="ta" placeholder="Drop a file here, or paste the original text." aria-label="Original text"></textarea>
+        <input class="file-in" type="file" id="fa" accept=".txt,.md,.markdown,.csv,.tsv,.json,.html,.htm,.xml,.docx,.rtf,.log,text/*" aria-label="Upload original file">
+      </div>
+      <div class="pane-foot"><span id="na">No file</span><span id="ca">0 words</span></div>
+    </div>
+    <div class="pane" data-side="b">
+      <div class="pane-head">
+        <h2><span class="n">2</span>New copy</h2>
+        <div class="pane-tools">
+          <button class="btn link" type="button" data-pick="b">Upload file</button>
+          <button class="btn link" type="button" data-clear="b">Clear</button>
+        </div>
+      </div>
+      <div class="drop" data-drop="b">
+        <textarea id="tb" placeholder="Drop a file here, or paste the new version." aria-label="New copy text"></textarea>
+        <input class="file-in" type="file" id="fb" accept=".txt,.md,.markdown,.csv,.tsv,.json,.html,.htm,.xml,.docx,.rtf,.log,text/*" aria-label="Upload new copy file">
+      </div>
+      <div class="pane-foot"><span id="nb">No file</span><span id="cb">0 words</span></div>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button class="btn primary" id="go" type="button">Compare</button>
+    <button class="btn" id="swap" type="button">Swap the two</button>
+    <div class="opts">
+      <label><input type="checkbox" id="o-ws" checked> Ignore extra spaces</label>
+      <label><input type="checkbox" id="o-case"> Ignore capital letters</label>
+    </div>
+    <span class="msg" id="msg" role="status"></span>
+  </div>
+  <p class="note" style="margin:-8px 0 0">Text files, Markdown, CSV, HTML and Word (.docx) upload directly. For PDFs and other formats, copy the text and paste it in. Everything stays in your browser.</p>
+
+  <section id="results" hidden aria-label="Comparison result">
+    <div class="summary">
+      <div class="verdict" id="verdict"></div>
+      <div class="stats" id="stats"></div>
+      <div>
+        <div class="map" id="map" aria-label="Where the changes are in the document"></div>
+        <div class="map-key" style="margin-top:6px"><span><i style="background:#e3a008"></i>Reworded</span><span><i style="background:var(--del-ink)"></i>Removed</span><span><i style="background:var(--add-ink)"></i>Added</span><span>Click a mark to jump to it</span></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="View">
+        <button type="button" id="v-side" aria-pressed="true">Side by side</button>
+        <button type="button" id="v-track" aria-pressed="false">Single column</button>
+      </div>
+      <div class="opts"><label><input type="checkbox" id="o-fold" checked> Hide unchanged text</label></div>
+      <div class="nav">
+        <button class="btn" type="button" id="prev" aria-label="Previous change">&larr; Previous</button>
+        <span class="count" id="pos" aria-live="polite"></span>
+        <button class="btn" type="button" id="next" aria-label="Next change">Next &rarr;</button>
+      </div>
+    </div>
+
+    <div class="sheet" id="sheet"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var CTX = 2;
+  var state = { rows: [], view: 'side', cur: -1, open: {} };
+
+  function esc(s) { return s.replace(/[&<>]/g, function (c) { return c === '&' ? '&amp;' : c === '<' ? '&lt;' : '&gt;'; }); }
+  function opts() { return { ws: $('o-ws').checked, cs: $('o-case').checked }; }
+  function norm(s, o) {
+    if (o.ws) s = s.replace(/\s+/g, ' ').trim();
+    if (o.cs) s = s.toLowerCase();
+    return s;
+  }
+  function wordCount(s) { var m = s.match(/[^\s]+/g); return m ? m.length : 0; }
+
+  /* ---------- diff core (Myers, O(ND)) ---------- */
+  function core(a, b) {
+    var n = a.length, m = b.length, ops = [], i;
+    if (n === 0) { for (i = 0; i < m; i++) ops.push({ t: 'add', j: i }); return ops; }
+    if (m === 0) { for (i = 0; i < n; i++) ops.push({ t: 'del', i: i }); return ops; }
+    var max = n + m, off = max + 1, v = new Int32Array(2 * max + 3), snaps = [], D = -1, d, k, x, y;
+    var LIMIT = 4000;
+    outer:
+    for (d = 0; d <= max; d++) {
+      if (d > LIMIT) { D = -2; break; }
+      for (k = -d; k <= d; k += 2) {
+        if (k === -d || (k !== d && v[off + k - 1] < v[off + k + 1])) x = v[off + k + 1];
+        else x = v[off + k - 1] + 1;
+        y = x - k;
+        while (x < n && y < m && a[x] === b[y]) { x++; y++; }
+        v[off + k] = x;
+        if (x >= n && y >= m) { D = d; break outer; }
+      }
+      snaps.push({ base: off - d - 1, arr: v.slice(off - d - 1, off + d + 2) });
+    }
+    if (D < 0) {
+      for (i = 0; i < n; i++) ops.push({ t: 'del', i: i });
+      for (i = 0; i < m; i++) ops.push({ t: 'add', j: i });
+      return ops;
+    }
+    x = n; y = m;
+    for (d = D; d >= 1; d--) {
+      var s = snaps[d - 1];
+      k = x - y;
+      var pk = (k === -d || (k !== d && s.arr[off + k - 1 - s.base] < s.arr[off + k + 1 - s.base])) ? k + 1 : k - 1;
+      var px = s.arr[off + pk - s.base], py = px - pk;
+      var isAdd = pk === k + 1;
+      var mx = isAdd ? px : px + 1, my = isAdd ? py + 1 : py;
+      while (x > mx && y > my) { ops.push({ t: 'eq', i: x - 1, j: y - 1 }); x--; y--; }
+      if (isAdd) ops.push({ t: 'add', j: my - 1 }); else ops.push({ t: 'del', i: mx - 1 });
+      x = px; y = py;
+    }
+    while (x > 0 && y > 0) { ops.push({ t: 'eq', i: x - 1, j: y - 1 }); x--; y--; }
+    return ops.reverse();
+  }
+  function myers(a, b) {
+    var n = a.length, m = b.length, s = 0, ops = [], i;
+    while (s < n && s < m && a[s] === b[s]) s++;
+    var ea = n, eb = m;
+    while (ea > s && eb > s && a[ea - 1] === b[eb - 1]) { ea--; eb--; }
+    for (i = 0; i < s; i++) ops.push({ t: 'eq', i: i, j: i });
+    var mid = core(a.slice(s, ea), b.slice(s, eb));
+    for (i = 0; i < mid.length; i++) {
+      var o = mid[i];
+      ops.push({ t: o.t, i: o.i === undefined ? undefined : o.i + s, j: o.j === undefined ? undefined : o.j + s });
+    }
+    for (i = 0; i < n - ea; i++) ops.push({ t: 'eq', i: ea + i, j: eb + i });
+    return ops;
+  }
+
+  /* ---------- word level ---------- */
+  var TOK = /\s+|[\p{L}\p{N}_]+(?:['’\-][\p{L}\p{N}_]+)*|[^\s\p{L}\p{N}_]/gu;
+  function tokens(s) { return s.match(TOK) || []; }
+  function tkey(t, o) {
+    if (/^\s+$/.test(t)) return o.ws ? ' ' : t;
+    return o.cs ? t.toLowerCase() : t;
+  }
+  function fuseSpaces(segs) {
+    for (var i = 1; i < segs.length - 1; i++) {
+      var g = segs[i];
+      if (g.t === 'eq' && /^\s+$/.test(g.s) && segs[i - 1].t !== 'eq' && segs[i - 1].t === segs[i + 1].t) g.t = segs[i - 1].t;
+    }
+    return segs;
+  }
+  function htmlOf(segs) {
+    var out = '', i = 0;
+    while (i < segs.length) {
+      var t = segs[i].t, s = '';
+      while (i < segs.length && segs[i].t === t) { s += segs[i].s; i++; }
+      s = esc(s);
+      out += t === 'eq' ? s : t === 'del' ? '<del>' + s + '</del>' : '<ins>' + s + '</ins>';
+    }
+    return out;
+  }
+  function wordDiff(la, lb, o) {
+    var ta = tokens(la), tb = tokens(lb);
+    var ops = myers(ta.map(function (t) { return tkey(t, o); }), tb.map(function (t) { return tkey(t, o); }));
+    var L = [], R = [], M = [], kept = 0, del = 0, add = 0;
+    ops.forEach(function (p) {
+      var w;
+      if (p.t === 'eq') {
+        w = /^\s+$/.test(ta[p.i]) ? 0 : 1; kept += w;
+        L.push({ t: 'eq', s: ta[p.i] }); R.push({ t: 'eq', s: tb[p.j] }); M.push({ t: 'eq', s: tb[p.j] });
+      } else if (p.t === 'del') {
+        if (!/^\s+$/.test(ta[p.i])) del++;
+        L.push({ t: 'del', s: ta[p.i] }); M.push({ t: 'del', s: ta[p.i] });
+      } else {
+        if (!/^\s+$/.test(tb[p.j])) add++;
+        R.push({ t: 'add', s: tb[p.j] }); M.push({ t: 'add', s: tb[p.j] });
+      }
+    });
+    var wa = ta.filter(function (t) { return !/^\s+$/.test(t); }).length;
+    var wb = tb.filter(function (t) { return !/^\s+$/.test(t); }).length;
+    return {
+      L: htmlOf(fuseSpaces(L)), R: htmlOf(fuseSpaces(R)), M: htmlOf(fuseSpaces(M)),
+      kept: kept, del: del, add: add, ratio: kept / Math.max(1, Math.max(wa, wb)),
+      sameWords: del === 0 && add === 0
+    };
+  }
+
+  /* ---------- compare ---------- */
+  function compare(textA, textB) {
+    var o = opts();
+    var A = textA.replace(/\r\n?/g, '\n').split('\n');
+    var B = textB.replace(/\r\n?/g, '\n').split('\n');
+    var ops = myers(A.map(function (l) { return norm(l, o); }), B.map(function (l) { return norm(l, o); }));
+    var rows = [], st = { eqLines: 0, chgLines: 0, kept: 0, add: 0, del: 0, groups: 0 };
+    var i = 0;
+    while (i < ops.length) {
+      var p = ops[i];
+      if (p.t === 'eq') {
+        st.eqLines++;
+        var w = wordCount(B[p.j]); st.kept += w;
+        var exact = A[p.i] === B[p.j];
+        var h = esc(B[p.j]);
+        var hl = esc(A[p.i]);
+        rows.push({ t: 'eq', ln: p.i + 1, rn: p.j + 1, L: hl, R: h, M: h });
+        i++; continue;
+      }
+      var dels = [], adds = [];
+      while (i < ops.length && ops[i].t !== 'eq') { (ops[i].t === 'del' ? dels : adds).push(ops[i]); i++; }
+      var pairs = Math.max(dels.length, adds.length);
+      for (var q = 0; q < pairs; q++) {
+        var dq = dels[q], aq = adds[q];
+        if (dq && aq) {
+          var wd = wordDiff(A[dq.i], B[aq.j], o);
+          if (wd.ratio >= 0.3 && !(wd.sameWords && A[dq.i] === B[aq.j])) {
+            st.chgLines++; st.kept += wd.kept; st.add += wd.add; st.del += wd.del;
+            rows.push({ t: 'chg', ln: dq.i + 1, rn: aq.j + 1, L: wd.L, R: wd.R, M: wd.M });
+          } else if (wd.sameWords) {
+            st.eqLines++; st.kept += wd.kept;
+            rows.push({ t: 'eq', ln: dq.i + 1, rn: aq.j + 1, L: esc(A[dq.i]), R: esc(B[aq.j]), M: esc(B[aq.j]) });
+          } else {
+            st.chgLines++; st.del += wordCount(A[dq.i]); st.add += wordCount(B[aq.j]);
+            rows.push({ t: 'chg', whole: true, ln: dq.i + 1, rn: aq.j + 1, L: esc(A[dq.i]), R: esc(B[aq.j]) });
+          }
+        } else if (dq) {
+          st.chgLines++; st.del += wordCount(A[dq.i]);
+          rows.push({ t: 'del', ln: dq.i + 1, L: esc(A[dq.i]) });
+        } else {
+          st.chgLines++; st.add += wordCount(B[aq.j]);
+          rows.push({ t: 'add', rn: aq.j + 1, R: esc(B[aq.j]) });
+        }
+      }
+    }
+    var prevEq = true, g = 0;
+    rows.forEach(function (r) {
+      if (r.t !== 'eq') { if (prevEq) { g++; r.g = g; } prevEq = false; } else prevEq = true;
+    });
+    st.groups = g;
+    st.origWords = wordCount(textA); st.newWords = wordCount(textB);
+    return { rows: rows, stats: st };
+  }
+
+  /* ---------- render ---------- */
+  function rowSide(r, idx) {
+    var cls = 'row ' + r.t + (r.whole ? ' whole-l whole-r' : '') + (r.g ? ' grp' : '');
+    var attr = r.g ? ' data-g="' + r.g + '"' : '';
+    var left = r.t === 'add' ? '' : r.L, right = r.t === 'del' ? '' : r.R;
+    return '<div class="' + cls + '"' + attr + '>' +
+      '<div class="ln ll' + (r.t === 'add' ? ' empty' : '') + '">' + (r.ln || '') + '</div>' +
+      '<div class="cell l' + (r.t === 'add' ? ' empty' : '') + '">' + left + '</div>' +
+      '<div class="ln rn' + (r.t === 'del' ? ' empty' : '') + '">' + (r.rn || '') + '</div>' +
+      '<div class="cell r' + (r.t === 'del' ? ' empty' : '') + '">' + right + '</div></div>';
+  }
+  function tl(cls, mk, html, g) {
+    return '<div class="tl ' + cls + (g ? ' grp' : '') + '"' + (g ? ' data-g="' + g + '"' : '') + '><div class="mk">' + mk + '</div><div class="cell">' + html + '</div></div>';
+  }
+  function rowTrack(r) {
+    if (r.t === 'eq') return tl('eq', '', r.M);
+    if (r.t === 'del') return tl('del', '−', r.L, r.g);
+    if (r.t === 'add') return tl('add', '+', r.R, r.g);
+    if (r.whole) return tl('del', '−', r.L, r.g) + tl('add', '+', r.R);
+    return tl('chg', '~', r.M, r.g);
+  }
+  function renderSheet() {
+    var fold = $('o-fold').checked, rows = state.rows, out = '', i = 0;
+    if (state.view === 'side') out += '<div class="colhead"><div></div><div>Original</div><div></div><div>New copy</div></div>';
+    var f = state.view === 'side' ? rowSide : rowTrack;
+    while (i < rows.length) {
+      if (rows[i].t !== 'eq' || !fold) { out += f(rows[i]); i++; continue; }
+      var j = i; while (j < rows.length && rows[j].t === 'eq') j++;
+      var len = j - i, startOpen = i === 0, endOpen = j === rows.length;
+      var headKeep = startOpen ? 0 : CTX, tailKeep = endOpen ? 0 : CTX;
+      if (len <= headKeep + tailKeep + 1 || state.open[i]) { for (var k = i; k < j; k++) out += f(rows[k]); }
+      else {
+        for (var a = i; a < i + headKeep; a++) out += f(rows[a]);
+        var hidden = len - headKeep - tailKeep;
+        out += '<button type="button" class="fold" data-open="' + i + '">Show ' + hidden + ' unchanged line' + (hidden === 1 ? '' : 's') + '</button>';
+        for (var z = j - tailKeep; z < j; z++) out += f(rows[z]);
+      }
+      i = j;
+    }
+    $('sheet').innerHTML = out;
+    markCur();
+  }
+  function renderSummary(res) {
+    var s = res.stats, el = $('stats');
+    if (s.groups === 0) {
+      $('verdict').textContent = 'No differences found. The two texts match.';
+      el.innerHTML = ''; $('map').innerHTML = '';
+      return;
+    }
+    var pct = s.origWords ? Math.max(0, Math.round(100 * (s.origWords - s.del) / s.origWords)) : 0;
+    $('verdict').textContent = s.groups + (s.groups === 1 ? ' place changed' : ' places changed') + '. About ' + pct + '% of the original wording is still there.';
+    el.innerHTML =
+      '<div class="stat add"><b>+' + s.add + '</b><span>words added</span></div>' +
+      '<div class="stat del"><b>−' + s.del + '</b><span>words removed</span></div>' +
+      '<div class="stat"><b>' + s.chgLines + '</b><span>lines changed</span></div>' +
+      '<div class="stat"><b>' + s.eqLines + '</b><span>lines unchanged</span></div>' +
+      '<div class="stat"><b>' + s.origWords + ' → ' + s.newWords + '</b><span>words, original to new</span></div>';
+    var map = '', i = 0, rows = res.rows;
+    var gi = 0;
+    while (i < rows.length) {
+      var r = rows[i];
+      if (r.t === 'eq') {
+        var j = i; while (j < rows.length && rows[j].t === 'eq') j++;
+        map += '<button class="eq" tabindex="-1" aria-hidden="true" style="flex:' + (j - i) + '"></button>'; i = j;
+      } else {
+        var j2 = i, types = {}; while (j2 < rows.length && rows[j2].t !== 'eq') { types[rows[j2].t] = 1; j2++; }
+        gi++;
+        var kind = Object.keys(types).length === 1 && !rows[i].whole ? rows[i].t : 'chg';
+        map += '<button class="' + kind + '" data-jump="' + gi + '" style="flex:' + (j2 - i) + '" aria-label="Go to change ' + gi + '"></button>';
+        i = j2;
+      }
+    }
+    $('map').innerHTML = map;
+  }
+
+  /* ---------- navigation ---------- */
+  function groupEls() { return $('sheet').querySelectorAll('[data-g]'); }
+  function markCur() {
+    var els = groupEls(), total = state.rows.length ? (state.rows.filter(function (r) { return r.g; }).length) : 0;
+    Array.prototype.forEach.call(els, function (e) { e.classList.toggle('cur', +e.dataset.g === state.cur + 1); });
+    $('pos').textContent = total ? (state.cur >= 0 ? 'Change ' + (state.cur + 1) + ' of ' + total : total + ' change' + (total === 1 ? '' : 's')) : '';
+    $('prev').disabled = $('next').disabled = !total;
+  }
+  function goTo(n) {
+    var total = state.rows.filter(function (r) { return r.g; }).length;
+    if (!total) return;
+    state.cur = (n + total) % total;
+    markCur();
+    var el = $('sheet').querySelector('[data-g="' + (state.cur + 1) + '"]');
+    if (el) {
+      var top = el.getBoundingClientRect().top + window.scrollY - 150;
+      window.scrollTo({ top: top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    }
+  }
+
+  /* ---------- inputs ---------- */
+  function updateCount(side) {
+    var t = $(side === 'a' ? 'ta' : 'tb').value, w = wordCount(t);
+    $(side === 'a' ? 'ca' : 'cb').textContent = w.toLocaleString() + (w === 1 ? ' word' : ' words');
+  }
+  function setName(side, name) { $(side === 'a' ? 'na' : 'nb').textContent = name || 'Pasted text'; }
+  function readDocx(file) {
+    if (!window.JSZip) return Promise.reject(new Error('Word support did not load. Paste the text instead.'));
+    return file.arrayBuffer().then(function (buf) { return JSZip.loadAsync(buf); }).then(function (zip) {
+      var f = zip.file('word/document.xml');
+      if (!f) throw new Error('This does not look like a Word document.');
+      return f.async('string');
+    }).then(function (xml) {
+      var doc = new DOMParser().parseFromString(xml, 'application/xml');
+      var W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+      var paras = doc.getElementsByTagNameNS(W, 'p'), out = [];
+      for (var i = 0; i < paras.length; i++) {
+        var s = '', walker = paras[i].getElementsByTagName('*');
+        for (var k = 0; k < walker.length; k++) {
+          var n = walker[k];
+          if (n.namespaceURI !== W) continue;
+          if (n.localName === 't') s += n.textContent;
+          else if (n.localName === 'tab') s += '\t';
+          else if (n.localName === 'br') s += '\n';
+        }
+        out.push(s);
+      }
+      return out.join('\n');
+    });
+  }
+  function loadFile(side, file) {
+    if (!file) return;
+    var p = /\.docx$/i.test(file.name) ? readDocx(file) : file.text();
+    p.then(function (text) {
+      $(side === 'a' ? 'ta' : 'tb').value = text;
+      setName(side, file.name); updateCount(side); $('msg').textContent = '';
+    }).catch(function (e) { $('msg').textContent = e.message || 'Could not read that file. Paste the text instead.'; });
+  }
+
+  document.querySelectorAll('[data-pick]').forEach(function (b) {
+    b.addEventListener('click', function () { $(b.dataset.pick === 'a' ? 'fa' : 'fb').click(); });
+  });
+  document.querySelectorAll('[data-clear]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var s = b.dataset.clear; $(s === 'a' ? 'ta' : 'tb').value = ''; $(s === 'a' ? 'fa' : 'fb').value = '';
+      $(s === 'a' ? 'na' : 'nb').textContent = 'No file'; updateCount(s);
+    });
+  });
+  ['a', 'b'].forEach(function (s) {
+    $(s === 'a' ? 'fa' : 'fb').addEventListener('change', function (e) { loadFile(s, e.target.files[0]); e.target.value = ''; });
+    $(s === 'a' ? 'ta' : 'tb').addEventListener('input', function () { setName(s, ''); updateCount(s); });
+    var drop = document.querySelector('[data-drop="' + s + '"]');
+    ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function () { drop.classList.remove('over'); }); });
+    drop.addEventListener('drop', function (e) { e.preventDefault(); loadFile(s, e.dataTransfer.files[0]); });
+  });
+
+  function run(scroll) {
+    var a = $('ta').value, b = $('tb').value;
+    if (!a.trim() || !b.trim()) { $('msg').textContent = 'Add text to both boxes first.'; return; }
+    $('msg').textContent = '';
+    var res = compare(a, b);
+    state.rows = res.rows; state.cur = -1; state.open = {};
+    $('results').hidden = false;
+    renderSummary(res);
+    if (res.stats.groups === 0) {
+      $('sheet').innerHTML = '<div class="same"><b>Nothing to show</b><span>Every line is the same in both versions.</span></div>';
+      markCur();
+    } else renderSheet();
+    if (scroll) $('results').scrollIntoView({ block: 'start' });
+  }
+  $('go').addEventListener('click', function () { run(true); });
+  $('swap').addEventListener('click', function () {
+    var t = $('ta').value, n = $('na').textContent;
+    $('ta').value = $('tb').value; $('tb').value = t;
+    $('na').textContent = $('nb').textContent; $('nb').textContent = n;
+    updateCount('a'); updateCount('b');
+    if (!$('results').hidden) run(false);
+  });
+  ['o-ws', 'o-case'].forEach(function (id) { $(id).addEventListener('change', function () { if (!$('results').hidden) run(false); }); });
+  $('o-fold').addEventListener('change', function () { state.open = {}; if (state.rows.length) renderSheet(); });
+  function setView(v) {
+    state.view = v;
+    $('v-side').setAttribute('aria-pressed', v === 'side');
+    $('v-track').setAttribute('aria-pressed', v === 'track');
+    if (state.rows.length && state.rows.some(function (r) { return r.g; })) renderSheet();
+  }
+  $('v-side').addEventListener('click', function () { setView('side'); });
+  $('v-track').addEventListener('click', function () { setView('track'); });
+  $('prev').addEventListener('click', function () { goTo(state.cur < 0 ? -1 : state.cur - 1); });
+  $('next').addEventListener('click', function () { goTo(state.cur + 1); });
+  $('map').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-jump]'); if (b) goTo(+b.dataset.jump - 1);
+  });
+  $('sheet').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-open]');
+    if (b) { state.open[b.dataset.open] = true; renderSheet(); }
+  });
+
+  /* ---------- example ---------- */
+  var EX_A = [
+    'Remote Work Policy',
+    '',
+    'Employees may work from home up to two days per week with approval from their manager.',
+    'Requests must be submitted at least five business days in advance.',
+    '',
+    'Equipment',
+    'The company will provide a laptop and a monitor. Employees are responsible for their own internet connection.',
+    'Lost or damaged equipment must be reported to IT within 24 hours.',
+    '',
+    'Working Hours',
+    'Remote employees must be available between 9:00 and 17:00 local time.',
+    'Meetings should be scheduled during core hours whenever possible.',
+    '',
+    'This policy takes effect on January 1 and will be reviewed every year.'
+  ].join('\n');
+  var EX_B = [
+    'Remote Work Policy',
+    '',
+    'Employees may work remotely up to three days per week with approval from their manager.',
+    'Requests must be submitted at least three business days in advance.',
+    '',
+    'Equipment',
+    'The company will provide a laptop, a monitor and a headset. Employees are responsible for their own internet connection.',
+    'Lost or damaged equipment must be reported to IT within 24 hours.',
+    '',
+    'Working Hours',
+    'Remote employees must be available between 9:00 and 17:00 local time.',
+    'Meetings should be scheduled during core hours whenever possible.',
+    'Camera use is optional for internal calls.',
+    '',
+    'Security',
+    'Employees must connect through the company VPN when handling customer data.',
+    '',
+    'This policy takes effect on January 1 and will be reviewed every year.'
+  ].join('\n');
+  $('example').addEventListener('click', function () {
+    $('ta').value = EX_A; $('tb').value = EX_B;
+    setName('a', 'Example: policy v1'); setName('b', 'Example: policy v2 (AI edit)');
+    updateCount('a'); updateCount('b'); run(false);
+  });
+
+  updateCount('a'); updateCount('b');
+  $('example').click();
+})();
+</script>
+
+</body></html>
