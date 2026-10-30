@@ -16,7 +16,7 @@ Everything runs in the browser. No text leaves the device.
 
 ## Using it
 
-Open `Redline.html`. It is one self-contained file that works offline, from disk or from any static host. Fonts come from Google Fonts when online and fall back to system fonts otherwise.
+Open `Redline.html`. It is one self-contained file (about 140 KB, 44 KB gzipped) that works offline, from disk or from any static host. Fonts come from Google Fonts when online and fall back to system fonts otherwise.
 
 Keyboard: `Ctrl/⌘ K` opens the command palette, `Alt 1–5` switches tools, and in the Diff Checker `J`/`K` step through changes.
 
@@ -41,6 +41,7 @@ npm run release    # build and copy the single file to ./Redline.html
 - **Vite + vite-plugin-singlefile**: the build tool. The plugin inlines every script, style and worker into one HTML file.
 - **Web Workers**: background threads for heavy work, so typing never stalls.
 - **Plain CSS with custom properties**: no CSS framework.
+- **No runtime libraries** beyond Preact. `.docx` files are unzipped with the browser's built-in `DecompressionStream` (`lib/zip.ts`).
 - **Vitest** for unit tests, **Playwright** for browser tests, **ESLint + Prettier** for style.
 
 ## Architecture
@@ -104,4 +105,5 @@ The sidebar, command palette, Send to menus and Alt-number shortcuts pick the ne
 ## Testing
 
 - `tests/unit/`: core logic, including a randomized check that the diff is minimal against a reference LCS (longest common subsequence) implementation.
-- `tests/e2e/`: opens the built file from `file://` in Chromium and exercises every tool: live diffing, regex timeouts, Send to, the palette, and the fallback when Web Workers are unavailable. The tests fail on any console error.
+- `tests/e2e/smoke.test.mjs`: opens the built file from `file://` in Chromium and exercises every tool: live diffing, `.docx` import, regex timeouts, Send to, the palette, and the fallback when Web Workers are unavailable. The tests fail on any console error.
+- `tests/e2e/a11y.test.mjs`: runs the axe-core accessibility audit (WCAG 2.1 A and AA) on every tool, in light and dark themes, and fails on serious or critical issues such as low colour contrast.

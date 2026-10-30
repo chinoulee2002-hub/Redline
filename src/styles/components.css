@@ -627,3 +627,21 @@ kbd {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+
+/* ---------- Phones ---------- */
+.mobile-only {
+  display: none;
+}
+@media (max-width: 860px) {
+  .mobile-only {
+    display: inline-flex;
+  }
+  /* iOS Safari zooms the page into any focused field under 16px; keep every field at 16px. */
+  .editor,
+  .editor--mono,
+  .editor--doc,
+  .field,
+  .stepper input {
+    font-size: 16px;
+  }
+}
