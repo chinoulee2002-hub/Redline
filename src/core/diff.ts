@@ -203,18 +203,14 @@ function changedPair(
     stats.wordsAdded += words.inserted;
     stats.wordsRemoved += words.deleted;
     if (options.detail === 'line') return rewrittenRow(left, right, ai, bi);
-    // Character mode: absorb 1–2 character islands so "colour → color" doesn't splinter.
-    const shown =
-      options.detail === 'char'
-        ? inlineDiff(charTokens(left), charTokens(right), options, (t) => isWhitespace(t) || t.length <= 2)
-        : words;
+    const shown = toSegments(
+      options.detail === 'char' ? refineByCharacters(words.pieces, options) : words.pieces,
+    );
     return {
       type: 'change',
       leftLine: ai + 1,
       rightLine: bi + 1,
-      left: shown.left,
-      right: shown.right,
-      merged: shown.merged,
+      ...shown,
       rewritten: false,
       block: 0,
     };
@@ -254,9 +250,8 @@ interface Piece {
 }
 
 interface InlineDiff {
-  left: Segment[];
-  right: Segment[];
-  merged: Segment[];
+  /** Grouped and tidied: equal runs, and each edit as a delete followed by an insert. */
+  pieces: Piece[];
   /** Non-whitespace tokens that were kept, removed and added. */
   kept: number;
   deleted: number;
@@ -295,18 +290,55 @@ function inlineDiff(
 
   // Group first so the absorb check sees whole unchanged runs, then regroup what it produced.
   const tidy = groupPieces(absorbShortEquals(groupPieces(pieces), absorbIfBetweenChanges));
+  const wordsA = aTokens.filter((t) => !isWhitespace(t)).length;
+  const wordsB = bTokens.filter((t) => !isWhitespace(t)).length;
+  return { pieces: tidy, kept, deleted, inserted, similarity: kept / Math.max(1, wordsA, wordsB) };
+}
+
+/** Below this share of shared letters, a reworded word is marked whole rather than letter by letter. */
+const CHAR_SIMILARITY_THRESHOLD = 0.5;
+
+/**
+ * Character detail: re-diffs each word-level edit letter by letter, but only
+ * where the old and new text mostly share letters ("colour" → "color").
+ * Different words ("two" → "three") stay marked whole, which reads better
+ * than a scatter of single-letter changes.
+ */
+function refineByCharacters(pieces: Piece[], options: DiffOptions): Piece[] {
+  const out: Piece[] = [];
+  for (let i = 0; i < pieces.length; i++) {
+    const del = pieces[i];
+    const ins = pieces[i + 1];
+    if (del.type === 'delete' && ins?.type === 'insert') {
+      const chars = inlineDiff(
+        charTokens(del.a),
+        charTokens(ins.b),
+        options,
+        (t) => isWhitespace(t) || t.length <= 2,
+      );
+      const shared = chars.pieces.reduce((n, p) => (p.type === 'equal' ? n + Array.from(p.a).length : n), 0);
+      const longer = Math.max(Array.from(del.a).length, Array.from(ins.b).length);
+      if (shared / longer >= CHAR_SIMILARITY_THRESHOLD) {
+        out.push(...chars.pieces);
+        i++;
+        continue;
+      }
+    }
+    out.push(del);
+  }
+  return groupPieces(out);
+}
+
+function toSegments(pieces: Piece[]): Pick<DiffRow, 'left' | 'right' | 'merged'> {
   const left: Segment[] = [];
   const right: Segment[] = [];
   const merged: Segment[] = [];
-  for (const p of tidy) {
+  for (const p of pieces) {
     if (p.type !== 'insert') left.push({ type: p.type, text: p.a });
     if (p.type !== 'delete') right.push({ type: p.type, text: p.b });
     merged.push({ type: p.type, text: p.type === 'delete' ? p.a : p.b });
   }
-
-  const wordsA = aTokens.filter((t) => !isWhitespace(t)).length;
-  const wordsB = bTokens.filter((t) => !isWhitespace(t)).length;
-  return { left, right, merged, kept, deleted, inserted, similarity: kept / Math.max(1, wordsA, wordsB) };
+  return { left, right, merged };
 }
 
 /**

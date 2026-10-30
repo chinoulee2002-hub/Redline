@@ -47,6 +47,11 @@ describe('compareTexts', () => {
     expect(del).toEqual(['u']);
   });
 
+  it('character detail keeps different words whole', () => {
+    const r = compareTexts('wait two days', 'wait three days', { ...opts, detail: 'char' });
+    expect(r.rows[0].right.filter((s) => s.type === 'insert').map((s) => s.text)).toEqual(['three']);
+  });
+
   it('renders a unified text diff', () => {
     const r = compareTexts('a\nb', 'a\nc', opts);
     expect(toUnifiedText(r.rows)).toBe('  a\n- b\n+ c');

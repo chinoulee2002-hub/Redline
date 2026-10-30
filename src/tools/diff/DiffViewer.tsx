@@ -32,6 +32,9 @@ export function DiffViewer({ result, pending, names }: Props) {
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set());
   const [limit, setLimit] = useState(PAGE);
   const scrollTo = useRef(0);
+  // Mirrors `current` without waiting for a render, so fast repeated key presses each move one step.
+  const position = useRef(0);
+  position.current = current;
 
   // A new result can shift every line: drop expanded folds and keep the cursor only if still valid.
   useEffect(() => {
@@ -51,8 +54,11 @@ export function DiffViewer({ result, pending, names }: Props) {
     const index = indexOfBlock(items, n);
     if (index >= limit) setLimit(index + PAGE);
     setCurrent(n);
+    position.current = n;
     scrollTo.current = n;
   };
+  const next = () => goTo(position.current + 1);
+  const previous = () => goTo(position.current ? position.current - 1 : total);
 
   // Scroll after render so rows added by a larger limit exist in the page.
   useEffect(() => {
@@ -70,8 +76,8 @@ export function DiffViewer({ result, pending, names }: Props) {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (e.metaKey || e.ctrlKey || e.altKey || target.closest('input, textarea, [contenteditable]')) return;
-      if (e.key === 'j' || e.key === 'n') goTo(current + 1);
-      else if (e.key === 'k' || e.key === 'p') goTo(current ? current - 1 : total);
+      if (e.key === 'j' || e.key === 'n') next();
+      else if (e.key === 'k' || e.key === 'p') previous();
       else return;
       e.preventDefault();
     };
@@ -96,23 +102,11 @@ export function DiffViewer({ result, pending, names }: Props) {
             </Toggle>
             <span class="toolbar__spacer" />
             <div class="nav" role="group" aria-label="Changes">
-              <Button
-                size="sm"
-                icon="chevronUp"
-                iconOnly
-                label="Previous change (k)"
-                onClick={() => goTo(current ? current - 1 : total)}
-              />
+              <Button size="sm" icon="chevronUp" iconOnly label="Previous change (k)" onClick={previous} />
               <span class="nav__pos" aria-live="polite">
                 {current ? `${current} of ${total}` : plural(total, 'change')}
               </span>
-              <Button
-                size="sm"
-                icon="chevronDown"
-                iconOnly
-                label="Next change (j)"
-                onClick={() => goTo(current + 1)}
-              />
+              <Button size="sm" icon="chevronDown" iconOnly label="Next change (j)" onClick={next} />
             </div>
             <Button
               size="sm"

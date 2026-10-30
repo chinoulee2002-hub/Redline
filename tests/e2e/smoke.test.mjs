@@ -55,6 +55,19 @@ describe('Redline', () => {
     page.assertNoErrors();
   });
 
+  test('diff steps through changes with J and K', async () => {
+    const page = await open('diff');
+    await page.getByText('3 places changed').waitFor();
+    await page.locator('h1').click();
+    await page.keyboard.press('j');
+    await page.keyboard.press('j');
+    await page.getByText('2 of 3').waitFor();
+    await page.keyboard.press('k');
+    await page.getByText('1 of 3').waitFor();
+    assert.equal((await page.locator('.sheet .is-current').count()) > 0, true);
+    page.assertNoErrors();
+  });
+
   test('diff imports a Word document', async () => {
     const page = await open('diff');
     await page
