@@ -14,7 +14,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "vite build && node --test tests/e2e/",
+    "test:e2e": "vite build && node --test tests/e2e/*.test.mjs",
     "check": "npm run typecheck && npm run lint && npm test"
   },
   "dependencies": {

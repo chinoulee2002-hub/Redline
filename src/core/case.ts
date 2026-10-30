@@ -103,9 +103,27 @@ function perLine(text: string, fn: (words: string[]) => string): string {
 const lowerAll = (words: string[]) => words.map((w) => w.toLowerCase());
 
 export const CASE_FORMATS: CaseFormat[] = [
-  { id: 'upper', label: 'UPPERCASE', group: 'Everyday', sample: 'HELLO WORLD', convert: (t) => t.toUpperCase() },
-  { id: 'lower', label: 'lowercase', group: 'Everyday', sample: 'hello world', convert: (t) => t.toLowerCase() },
-  { id: 'title', label: 'Title Case', group: 'Everyday', sample: 'The Lord of the Rings', convert: toTitleCase },
+  {
+    id: 'upper',
+    label: 'UPPERCASE',
+    group: 'Everyday',
+    sample: 'HELLO WORLD',
+    convert: (t) => t.toUpperCase(),
+  },
+  {
+    id: 'lower',
+    label: 'lowercase',
+    group: 'Everyday',
+    sample: 'hello world',
+    convert: (t) => t.toLowerCase(),
+  },
+  {
+    id: 'title',
+    label: 'Title Case',
+    group: 'Everyday',
+    sample: 'The Lord of the Rings',
+    convert: toTitleCase,
+  },
   {
     id: 'sentence',
     label: 'Sentence case',
@@ -118,7 +136,12 @@ export const CASE_FORMATS: CaseFormat[] = [
     label: 'camelCase',
     group: 'Programming',
     sample: 'helloWorld',
-    convert: (t) => perLine(t, (w) => lowerAll(w).map((x, i) => (i ? capitalize(x) : x)).join('')),
+    convert: (t) =>
+      perLine(t, (w) =>
+        lowerAll(w)
+          .map((x, i) => (i ? capitalize(x) : x))
+          .join(''),
+      ),
   },
   {
     id: 'pascal',

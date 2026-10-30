@@ -11,12 +11,27 @@ type ButtonProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, 'icon'> & {
   children?: ComponentChildren;
 };
 
-export function Button({ variant = 'default', size = 'md', icon, iconOnly, label, children, class: cls, ...rest }: ButtonProps) {
+export function Button({
+  variant = 'default',
+  size = 'md',
+  icon,
+  iconOnly,
+  label,
+  children,
+  class: cls,
+  ...rest
+}: ButtonProps) {
   const classes = ['btn', `btn--${variant}`, size === 'sm' && 'btn--sm', iconOnly && 'btn--icon', cls]
     .filter(Boolean)
     .join(' ');
   return (
-    <button type="button" class={classes} aria-label={iconOnly ? label : undefined} title={iconOnly ? label : undefined} {...rest}>
+    <button
+      type="button"
+      class={classes}
+      aria-label={iconOnly ? label : undefined}
+      title={iconOnly ? label : undefined}
+      {...rest}
+    >
       {icon && <Icon name={icon} />}
       {!iconOnly && (children ?? label)}
     </button>

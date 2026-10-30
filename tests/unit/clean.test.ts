@@ -14,6 +14,10 @@ describe('cleanText', () => {
     );
   });
 
+  it('joins paragraphs separated by several blank lines without leading spaces', () => {
+    expect(run('one\ntwo\n\n\n\nthree', 'joinLines')).toBe('one two\n\nthree');
+  });
+
   it('strips HTML and decodes entities', () => {
     expect(run('<p>Tom &amp; Jerry</p><script>x()</script><br>&#169;', 'stripHtml')).toBe('Tom & Jerry\n\n©');
   });
@@ -25,8 +29,8 @@ describe('cleanText', () => {
   });
 
   it('removes invisible characters, emoji and non-ASCII', () => {
-    expect(run('a​b­c', 'removeInvisible')).toBe('abc');
-    expect(run('hi 👋🏽 🇫🇷 👨‍👩‍👧!', 'removeEmoji')).toBe('hi   !');
+    expect(run('a\u200bb\u00adc', 'removeInvisible')).toBe('abc');
+    expect(run('hi 👋🏽 🇫🇷 👨\u200d👩\u200d👧!', 'removeEmoji')).toBe('hi   !');
     expect(run('café “ok”', 'straightenPunctuation', 'asciiOnly')).toBe('cafe "ok"');
   });
 

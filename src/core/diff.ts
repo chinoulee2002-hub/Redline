@@ -167,7 +167,12 @@ function equalRow(left: string, right: string, ai: number, bi: number): DiffRow 
   };
 }
 
-function wholeLineRow(type: 'delete' | 'insert', text: string, leftLine: number | null, rightLine: number | null): DiffRow {
+function wholeLineRow(
+  type: 'delete' | 'insert',
+  text: string,
+  leftLine: number | null,
+  rightLine: number | null,
+): DiffRow {
   const seg: Segment[] = [{ type, text }];
   return {
     type,
@@ -312,7 +317,8 @@ function absorbShortEquals(pieces: Piece[], shouldAbsorb: (text: string) => bool
   const out: Piece[] = [];
   for (let i = 0; i < pieces.length; i++) {
     const p = pieces[i];
-    const between = i > 0 && i < pieces.length - 1 && pieces[i - 1].type !== 'equal' && pieces[i + 1].type !== 'equal';
+    const between =
+      i > 0 && i < pieces.length - 1 && pieces[i - 1].type !== 'equal' && pieces[i + 1].type !== 'equal';
     if (p.type === 'equal' && between && shouldAbsorb(p.a)) {
       out.push({ type: 'delete', a: p.a, b: '' }, { type: 'insert', a: '', b: p.b });
     } else out.push(p);

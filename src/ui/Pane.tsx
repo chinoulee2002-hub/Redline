@@ -4,20 +4,21 @@
  */
 import type { Signal } from '@preact/signals';
 import type { ComponentChildren } from 'preact';
-import { useRef, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'preact/hooks';
 import { copyText } from '../lib/clipboard';
 import { downloadText } from '../lib/download';
 import { ACCEPTED_FILES, readFileAsText } from '../lib/files';
 import { plural } from '../lib/format';
 import { showToast } from '../lib/toast';
-import { countChars, countLines, countWords } from '../core/tokenize';
+import { countText } from '../core/tokenize';
+import { useDebounced } from '../lib/useDebounced';
 import type { SentText } from '../tools/types';
 import { Button } from './Button';
 import { SendToMenu } from './SendToMenu';
 
 type Font = 'ui' | 'doc' | 'mono';
 
-function PaneFrame({
+export function PaneFrame({
   title,
   badge,
   actions,
@@ -53,10 +54,16 @@ function PaneFrame({
   );
 }
 
+/** Above this size, counts update after typing pauses instead of on every keystroke. */
+const LIVE_COUNT_LIMIT = 100_000;
+
 export function TextCounts({ text }: { text: string }) {
+  const settled = useDebounced(text, 250);
+  const source = text.length > LIVE_COUNT_LIMIT ? settled : text;
+  const c = useMemo(() => countText(source), [source]);
   return (
     <span class="counts">
-      {plural(countWords(text), 'word')} · {plural(countChars(text), 'char')} · {plural(countLines(text), 'line')}
+      {plural(c.words, 'word')} · {plural(c.chars, 'char')} · {plural(c.lines, 'line')}
     </span>
   );
 }
@@ -157,7 +164,9 @@ export function TextPane({
       }
       footer={
         <>
-          <span class="pane__file">{fileName?.value || (allowFiles ? 'Paste, type or drop a file' : '')}</span>
+          <span class="pane__file">
+            {fileName?.value || (allowFiles ? 'Paste, type or drop a file' : '')}
+          </span>
           <TextCounts text={value.value} />
         </>
       }
@@ -213,7 +222,15 @@ export function OutputPane({
       actions={
         <>
           {onReuse && (
-            <Button size="sm" variant="ghost" icon="reuse" iconOnly label="Use as input" disabled={!text} onClick={onReuse} />
+            <Button
+              size="sm"
+              variant="ghost"
+              icon="reuse"
+              iconOnly
+              label="Use as input"
+              disabled={!text}
+              onClick={onReuse}
+            />
           )}
           <Button
             size="sm"
@@ -225,7 +242,13 @@ export function OutputPane({
             onClick={() => downloadText(fileName, text)}
           />
           <SendToMenu from={sendFrom} payload={payload} disabled={!text} />
-          <Button size="sm" variant="primary" icon="copy" disabled={!text} onClick={() => void copyText(text)}>
+          <Button
+            size="sm"
+            variant="primary"
+            icon="copy"
+            disabled={!text}
+            onClick={() => void copyText(text)}
+          >
             Copy
           </Button>
         </>

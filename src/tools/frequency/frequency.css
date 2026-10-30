@@ -1,0 +1,158 @@
+.freq {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 16px;
+  align-items: start;
+}
+.freq__skip {
+  flex: 1 1 220px;
+  height: 32px;
+  border-radius: 999px;
+  font-size: 13.5px;
+}
+.freq__results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.freq__totals {
+  padding: 16px 18px;
+}
+.freq__table-card {
+  overflow: hidden;
+}
+.freq__table-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.search-field {
+  position: relative;
+  flex: 1;
+  display: flex;
+  color: var(--faint);
+}
+.search-field .icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.search-field .field {
+  flex: 1;
+  height: 34px;
+  padding-left: 34px;
+}
+.freq__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.freq__table th {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+}
+.freq__table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+.freq__table tbody tr:hover {
+  background: var(--surface-2);
+}
+.freq__table .num {
+  width: 1%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.muted {
+  color: var(--faint);
+}
+.freq__term {
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.freq__share-col {
+  width: 34%;
+}
+.share {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--sunken);
+  overflow: hidden;
+}
+.bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #8b5cf6));
+  transition: width 240ms var(--ease);
+}
+.bar__label {
+  min-width: 46px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.freq__act {
+  width: 1%;
+  padding: 2px 6px !important;
+}
+.freq__act .btn {
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+tr:hover .freq__act .btn,
+.freq__act .btn:focus-visible {
+  opacity: 1;
+}
+.sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+}
+.sort .icon {
+  opacity: 0;
+}
+.sort.is-on {
+  color: var(--ink);
+}
+.sort.is-on .icon {
+  opacity: 1;
+}
+.freq__none {
+  padding: 24px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 1100px) {
+  .freq {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (hover: none) {
+  .freq__act .btn {
+    opacity: 1;
+  }
+}

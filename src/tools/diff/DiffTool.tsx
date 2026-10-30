@@ -5,7 +5,16 @@ import { ToolHeader } from '../../ui/ToolHeader';
 import { useTask } from '../../lib/useTask';
 import type { DiffDetail } from '../../core/diff';
 import { DiffViewer } from './DiffViewer';
-import { diffRunner, original, originalName, revised, revisedName, settings, swapSides, updateSettings } from './state';
+import {
+  diffRunner,
+  original,
+  originalName,
+  revised,
+  revisedName,
+  settings,
+  swapSides,
+  updateSettings,
+} from './state';
 import './diff.css';
 
 const DETAIL_OPTIONS: { value: DiffDetail; label: string; title: string }[] = [
@@ -21,6 +30,7 @@ export function DiffTool() {
       <div class="grid-2">
         <TextPane
           title="Original"
+          ariaLabel="Original text"
           badge="1"
           value={original}
           fileName={originalName}
@@ -30,6 +40,7 @@ export function DiffTool() {
         />
         <TextPane
           title="Changed"
+          ariaLabel="Changed text"
           badge="2"
           value={revised}
           fileName={revisedName}
@@ -55,7 +66,12 @@ function DiffOptions() {
         Ignore capitals
       </Toggle>
       <span class="optionbar__label">Detail</span>
-      <Segmented label="Highlight detail" options={DETAIL_OPTIONS} value={s.detail} onChange={(detail) => updateSettings({ detail })} />
+      <Segmented
+        label="Highlight detail"
+        options={DETAIL_OPTIONS}
+        value={s.detail}
+        onChange={(detail) => updateSettings({ detail })}
+      />
       <span class="optionbar__spacer" />
       <Button icon="swap" variant="ghost" onClick={swapSides}>
         Swap sides

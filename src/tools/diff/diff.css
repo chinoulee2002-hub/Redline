@@ -40,7 +40,9 @@
   padding: 0;
   flex-basis: 0;
   border-radius: 2px;
-  transition: filter var(--fast) var(--ease), transform var(--fast) var(--ease);
+  transition:
+    filter var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
 }
 button.map__mark:hover {
   filter: brightness(1.15);

@@ -40,7 +40,10 @@ export function DiffViewer({ result, pending, names }: Props) {
     setCurrent((c) => (c <= total ? c : 0));
   }, [result, total]);
 
-  const items = useMemo(() => layoutRows(result.rows, hideUnchanged, expanded), [result, hideUnchanged, expanded]);
+  const items = useMemo(
+    () => layoutRows(result.rows, hideUnchanged, expanded),
+    [result, hideUnchanged, expanded],
+  );
 
   const goTo = (block: number) => {
     if (!total) return;
@@ -56,7 +59,10 @@ export function DiffViewer({ result, pending, names }: Props) {
     if (!scrollTo.current) return;
     const el = document.querySelector(`.sheet [data-block="${scrollTo.current}"]`);
     scrollTo.current = 0;
-    el?.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    el?.scrollIntoView({
+      block: 'center',
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
   });
 
   // Keyboard: j / n for next change, k / p for previous, unless typing.
@@ -79,19 +85,41 @@ export function DiffViewer({ result, pending, names }: Props) {
       {total > 0 && (
         <>
           <div class="toolbar">
-            <Segmented label="Layout" options={VIEW_OPTIONS} value={view} onChange={(v) => updateSettings({ view: v })} />
+            <Segmented
+              label="Layout"
+              options={VIEW_OPTIONS}
+              value={view}
+              onChange={(v) => updateSettings({ view: v })}
+            />
             <Toggle checked={hideUnchanged} onChange={(v) => updateSettings({ hideUnchanged: v })}>
               Hide unchanged
             </Toggle>
             <span class="toolbar__spacer" />
             <div class="nav" role="group" aria-label="Changes">
-              <Button size="sm" icon="chevronUp" iconOnly label="Previous change (k)" onClick={() => goTo(current ? current - 1 : total)} />
+              <Button
+                size="sm"
+                icon="chevronUp"
+                iconOnly
+                label="Previous change (k)"
+                onClick={() => goTo(current ? current - 1 : total)}
+              />
               <span class="nav__pos" aria-live="polite">
                 {current ? `${current} of ${total}` : plural(total, 'change')}
               </span>
-              <Button size="sm" icon="chevronDown" iconOnly label="Next change (j)" onClick={() => goTo(current + 1)} />
+              <Button
+                size="sm"
+                icon="chevronDown"
+                iconOnly
+                label="Next change (j)"
+                onClick={() => goTo(current + 1)}
+              />
             </div>
-            <Button size="sm" variant="ghost" icon="copy" onClick={() => void copyText(toUnifiedText(result.rows), 'Diff copied as text')}>
+            <Button
+              size="sm"
+              variant="ghost"
+              icon="copy"
+              onClick={() => void copyText(toUnifiedText(result.rows), 'Diff copied as text')}
+            >
               Copy diff
             </Button>
             <Button
@@ -123,17 +151,26 @@ function Summary({ result, onJump }: { result: DiffResult; onJump: (block: numbe
     return (
       <div class="card summary summary--same">
         <b>No differences</b>
-        <span>Every line matches{settings.value.ignoreWhitespace || settings.value.ignoreCase ? ' (with the ignore options above)' : ''}.</span>
+        <span>
+          Every line matches
+          {settings.value.ignoreWhitespace || settings.value.ignoreCase
+            ? ' (with the ignore options above)'
+            : ''}
+          .
+        </span>
       </div>
     );
   }
   return (
     <div class="card summary">
       <p class="summary__verdict">
-        {plural(s.blocks, 'place')} changed. About {s.retainedPercent}% of the original wording is still there.
+        {plural(s.blocks, 'place')} changed. About {s.retainedPercent}% of the original wording is still
+        there.
       </p>
       {result.approximate && (
-        <p class="note">These texts differ a lot, so some changes are shown as whole blocks rather than line by line.</p>
+        <p class="note">
+          These texts differ a lot, so some changes are shown as whole blocks rather than line by line.
+        </p>
       )}
       <Stats
         items={[
@@ -141,7 +178,10 @@ function Summary({ result, onJump }: { result: DiffResult; onJump: (block: numbe
           { label: 'Words removed', value: `−${formatNumber(s.wordsRemoved)}`, tone: 'del' },
           { label: 'Lines changed', value: formatNumber(s.linesChanged) },
           { label: 'Lines unchanged', value: formatNumber(s.linesUnchanged) },
-          { label: 'Words, before → after', value: `${formatNumber(s.originalWords)} → ${formatNumber(s.newWords)}` },
+          {
+            label: 'Words, before → after',
+            value: `${formatNumber(s.originalWords)} → ${formatNumber(s.newWords)}`,
+          },
         ]}
       />
       <ChangeMap rows={result.rows} onJump={onJump} />
@@ -186,9 +226,18 @@ function ChangeMap({ rows, onJump }: { rows: DiffRow[]; onJump: (block: number) 
         )}
       </div>
       <div class="map-key">
-        <span><i class="map__mark--change" />Reworded</span>
-        <span><i class="map__mark--delete" />Removed</span>
-        <span><i class="map__mark--insert" />Added</span>
+        <span>
+          <i class="map__mark--change" />
+          Reworded
+        </span>
+        <span>
+          <i class="map__mark--delete" />
+          Removed
+        </span>
+        <span>
+          <i class="map__mark--insert" />
+          Added
+        </span>
         <span class="map-key__hint">Click a mark, or press J / K, to step through changes</span>
       </div>
     </div>
@@ -246,7 +295,13 @@ function Segments({ segs, whole }: { segs: Segment[]; whole: boolean }) {
   return (
     <>
       {segs.map((s, i) =>
-        s.type === 'equal' ? s.text : s.type === 'delete' ? <del key={i}>{s.text}</del> : <ins key={i}>{s.text}</ins>,
+        s.type === 'equal' ? (
+          s.text
+        ) : s.type === 'delete' ? (
+          <del key={i}>{s.text}</del>
+        ) : (
+          <ins key={i}>{s.text}</ins>
+        ),
       )}
     </>
   );
@@ -272,7 +327,14 @@ function SideRow({ row, current }: { row: DiffRow; current: boolean }) {
   );
 }
 
-function SingleLine({ kind, mark, line, children, block, current }: {
+function SingleLine({
+  kind,
+  mark,
+  line,
+  children,
+  block,
+  current,
+}: {
   kind: string;
   mark: string;
   line: number | null;
@@ -283,7 +345,9 @@ function SingleLine({ kind, mark, line, children, block, current }: {
   return (
     <div class={`line line--${kind}${current ? ' is-current' : ''}`} data-block={block || undefined}>
       <span class="ln">{line ?? ''}</span>
-      <span class="line__mark" aria-hidden="true">{mark}</span>
+      <span class="line__mark" aria-hidden="true">
+        {mark}
+      </span>
       <div class="cell">{children}</div>
     </div>
   );
@@ -293,17 +357,33 @@ function SingleRow({ row, current }: { row: DiffRow; current: boolean }) {
   const text = (segs: Segment[]) => segs.map((s) => s.text).join('');
   switch (row.type) {
     case 'equal':
-      return <SingleLine kind="equal" mark="" line={row.rightLine} current={false}>{text(row.right)}</SingleLine>;
+      return (
+        <SingleLine kind="equal" mark="" line={row.rightLine} current={false}>
+          {text(row.right)}
+        </SingleLine>
+      );
     case 'delete':
-      return <SingleLine kind="delete" mark="−" line={row.leftLine} block={row.block} current={current}>{text(row.left)}</SingleLine>;
+      return (
+        <SingleLine kind="delete" mark="−" line={row.leftLine} block={row.block} current={current}>
+          {text(row.left)}
+        </SingleLine>
+      );
     case 'insert':
-      return <SingleLine kind="insert" mark="+" line={row.rightLine} block={row.block} current={current}>{text(row.right)}</SingleLine>;
+      return (
+        <SingleLine kind="insert" mark="+" line={row.rightLine} block={row.block} current={current}>
+          {text(row.right)}
+        </SingleLine>
+      );
     default:
       if (row.rewritten) {
         return (
           <>
-            <SingleLine kind="delete" mark="−" line={row.leftLine} block={row.block} current={current}>{text(row.left)}</SingleLine>
-            <SingleLine kind="insert" mark="+" line={row.rightLine} current={current}>{text(row.right)}</SingleLine>
+            <SingleLine kind="delete" mark="−" line={row.leftLine} block={row.block} current={current}>
+              {text(row.left)}
+            </SingleLine>
+            <SingleLine kind="insert" mark="+" line={row.rightLine} current={current}>
+              {text(row.right)}
+            </SingleLine>
           </>
         );
       }

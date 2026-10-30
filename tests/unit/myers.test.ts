@@ -44,8 +44,12 @@ describe('diffSequences', () => {
       expect(out).toEqual(b);
       expect(edits).toBe(a.length + b.length - 2 * lcsLength(a, b));
       // Indices on each side must be visited in order exactly once.
-      expect(ops.filter((o) => o.type !== 'insert').map((o) => (o as { a: number }).a)).toEqual(a.map((_, i) => i));
-      expect(ops.filter((o) => o.type !== 'delete').map((o) => (o as { b: number }).b)).toEqual(b.map((_, i) => i));
+      expect(ops.filter((o) => o.type !== 'insert').map((o) => (o as { a: number }).a)).toEqual(
+        a.map((_, i) => i),
+      );
+      expect(ops.filter((o) => o.type !== 'delete').map((o) => (o as { b: number }).b)).toEqual(
+        b.map((_, i) => i),
+      );
     }
   });
 

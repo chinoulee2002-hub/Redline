@@ -34,6 +34,29 @@ export function countWords(text: string): number {
   return count;
 }
 
+export interface TextCounts {
+  words: number;
+  chars: number;
+  lines: number;
+}
+
+/** Words, characters (code points) and lines in a single pass over the text. */
+export function countText(text: string): TextCounts {
+  let words = 0;
+  let chars = 0;
+  let lines = text === '' ? 0 : 1;
+  let inWord = false;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code === 10) lines++;
+    if (code < 0xdc00 || code > 0xdfff) chars++;
+    const space = isSpace(code);
+    if (!space && !inWord) words++;
+    inWord = !space;
+  }
+  return { words, chars, lines };
+}
+
 export function countLines(text: string): number {
   if (text === '') return 0;
   let lines = 1;

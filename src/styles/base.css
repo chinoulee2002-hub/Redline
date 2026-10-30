@@ -118,6 +118,9 @@ p {
 .nav-link kbd {
   margin-left: auto;
 }
+.nav-link__short {
+  display: none;
+}
 .sidebar__foot {
   margin-top: auto;
   display: flex;
@@ -202,8 +205,12 @@ p {
   }
   .brand,
   .sidebar__foot,
-  .nav-link kbd {
+  .nav-link kbd,
+  .nav-link__name {
     display: none;
+  }
+  .nav-link__short {
+    display: inline;
   }
   .nav-list {
     flex: 1;

@@ -8,10 +8,13 @@ import type { DiffRow } from '../../core/diff';
 export const CONTEXT_LINES = 2;
 
 export type SheetItem =
-  | { kind: 'row'; row: DiffRow; key: number }
-  | { kind: 'fold'; start: number; hidden: number; key: string };
+  { kind: 'row'; row: DiffRow; key: number } | { kind: 'fold'; start: number; hidden: number; key: string };
 
-export function layoutRows(rows: DiffRow[], hideUnchanged: boolean, expanded: ReadonlySet<number>): SheetItem[] {
+export function layoutRows(
+  rows: DiffRow[],
+  hideUnchanged: boolean,
+  expanded: ReadonlySet<number>,
+): SheetItem[] {
   const items: SheetItem[] = [];
   const push = (from: number, to: number) => {
     for (let k = from; k < to; k++) items.push({ kind: 'row', row: rows[k], key: k });

@@ -9,9 +9,7 @@
  */
 
 export type EditOp =
-  | { type: 'equal'; a: number; b: number }
-  | { type: 'delete'; a: number }
-  | { type: 'insert'; b: number };
+  { type: 'equal'; a: number; b: number } | { type: 'delete'; a: number } | { type: 'insert'; b: number };
 
 export interface EditScript {
   ops: EditOp[];

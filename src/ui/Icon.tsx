@@ -59,7 +59,13 @@ export function Logo({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
       <rect width="32" height="32" rx="8" fill="var(--ink)" />
-      <path d="M8 11h16M8 16h9M8 21h12" stroke="var(--surface)" stroke-width="2.2" stroke-linecap="round" opacity=".55" />
+      <path
+        d="M8 11h16M8 16h9M8 21h12"
+        stroke="var(--surface)"
+        stroke-width="2.2"
+        stroke-linecap="round"
+        opacity=".55"
+      />
       <path d="M7 16.5 25 14" stroke="#ef4444" stroke-width="2.6" stroke-linecap="round" />
     </svg>
   );

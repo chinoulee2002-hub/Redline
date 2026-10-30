@@ -1,12 +1,17 @@
 /** Builds a standalone HTML report of a comparison, for sharing or archiving. */
 import type { DiffResult, Segment } from '../../core/diff';
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+const esc = (s: string) =>
+  s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 function segs(list: Segment[], whole: boolean): string {
   if (whole) return esc(list.map((s) => s.text).join(''));
   return list
-    .map((s) => (s.type === 'equal' ? esc(s.text) : `<${s.type === 'delete' ? 'del' : 'ins'}>${esc(s.text)}</${s.type === 'delete' ? 'del' : 'ins'}>`))
+    .map((s) =>
+      s.type === 'equal'
+        ? esc(s.text)
+        : `<${s.type === 'delete' ? 'del' : 'ins'}>${esc(s.text)}</${s.type === 'delete' ? 'del' : 'ins'}>`,
+    )
     .join('');
 }
 

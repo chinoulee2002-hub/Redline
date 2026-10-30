@@ -104,7 +104,8 @@ kbd {
 }
 .skeleton {
   height: 160px;
-  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%) 0 0 / 200% 100%;
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%) 0 0 / 200%
+    100%;
   animation: shimmer 1.2s linear infinite;
 }
 @keyframes shimmer {
@@ -607,4 +608,14 @@ kbd {
   background: transparent;
   text-align: left;
   font-size: 14px;
+}
+
+/* Small uppercase heading above a group of controls. */
+.section-label {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }

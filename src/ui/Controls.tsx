@@ -77,7 +77,12 @@ export function NumberField({
   return (
     <div class="stepper" role="group" aria-label={label}>
       <span class="stepper__label">{label}</span>
-      <button type="button" aria-label={`Decrease ${label}`} onClick={() => set(value - 1)} disabled={value <= min}>
+      <button
+        type="button"
+        aria-label={`Decrease ${label}`}
+        onClick={() => set(value - 1)}
+        disabled={value <= min}
+      >
         −
       </button>
       <input
@@ -92,7 +97,12 @@ export function NumberField({
           if (Number.isFinite(n)) set(n);
         }}
       />
-      <button type="button" aria-label={`Increase ${label}`} onClick={() => set(value + 1)} disabled={value >= max}>
+      <button
+        type="button"
+        aria-label={`Increase ${label}`}
+        onClick={() => set(value + 1)}
+        disabled={value >= max}
+      >
         +
       </button>
     </div>

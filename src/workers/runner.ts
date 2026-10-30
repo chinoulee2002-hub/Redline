@@ -9,7 +9,13 @@
  *   policy, for example), tasks run on the main thread instead.
  */
 import ComputeWorker from './compute.worker?worker&inline';
-import { runHandler, type TaskName, type TaskInput, type TaskOutput, type TaskResponseMessage } from './handlers';
+import {
+  runHandler,
+  type TaskName,
+  type TaskInput,
+  type TaskOutput,
+  type TaskResponseMessage,
+} from './handlers';
 
 export type TaskErrorKind = 'failed' | 'timeout' | 'superseded';
 
@@ -56,7 +62,9 @@ export class TaskRunner {
     if (!worker) {
       this.running = { id, job };
       // Yield first so the UI can paint the pending state before blocking work starts.
-      setTimeout(() => this.finish(id, () => ({ id, ok: true, result: runHandler(job.task, job.input as never) })));
+      setTimeout(() =>
+        this.finish(id, () => ({ id, ok: true, result: runHandler(job.task, job.input as never) })),
+      );
       return;
     }
     const timer = this.timeoutMs ? setTimeout(() => this.onTimeout(id), this.timeoutMs) : undefined;
@@ -95,7 +103,9 @@ export class TaskRunner {
     if (this.worker) return this.worker;
     try {
       const worker = new ComputeWorker();
-      worker.addEventListener('message', (e: MessageEvent<TaskResponseMessage>) => this.finish(e.data.id, () => e.data));
+      worker.addEventListener('message', (e: MessageEvent<TaskResponseMessage>) =>
+        this.finish(e.data.id, () => e.data),
+      );
       worker.addEventListener('error', (e) => {
         // The worker script failed to load or crashed: switch to the main thread for good
         // and retry whatever was running there.

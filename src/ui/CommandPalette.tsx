@@ -23,7 +23,12 @@ function buildCommands(activeId: string): Command[] {
   }));
   const active = findTool(activeId);
   if (active?.loadExample) {
-    commands.push({ id: 'example', label: `Load example in ${active.name}`, icon: 'sparkles', run: active.loadExample });
+    commands.push({
+      id: 'example',
+      label: `Load example in ${active.name}`,
+      icon: 'sparkles',
+      run: active.loadExample,
+    });
   }
   commands.push(
     { id: 'theme:light', label: 'Use light theme', icon: 'sun', run: () => (theme.value = 'light') },

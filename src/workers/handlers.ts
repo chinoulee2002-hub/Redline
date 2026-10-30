@@ -14,7 +14,8 @@ export const handlers = {
     compareTexts(input.original, input.revised, input.options),
   convertCase: (input: { text: string; format: CaseId }) => convertCase(input.text, input.format),
   clean: (input: { text: string; steps: CleanStepId[] }) => cleanText(input.text, input.steps),
-  frequency: (input: { text: string; options: FrequencyOptions }) => analyzeFrequency(input.text, input.options),
+  frequency: (input: { text: string; options: FrequencyOptions }) =>
+    analyzeFrequency(input.text, input.options),
   regex: (input: RegexRequest) => runRegex(input),
 };
 
@@ -34,4 +35,5 @@ export interface TaskRequestMessage {
   input: unknown;
 }
 
-export type TaskResponseMessage = { id: number; ok: true; result: unknown } | { id: number; ok: false; error: string };
+export type TaskResponseMessage =
+  { id: number; ok: true; result: unknown } | { id: number; ok: false; error: string };

@@ -34,7 +34,7 @@ export interface CleanStep {
   apply: (text: string) => string;
 }
 
-const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0' };
 
 function decodeEntities(text: string): string {
   return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, name: string) => {
@@ -74,11 +74,12 @@ function stripMarkdown(text: string): string {
 
 function joinLines(text: string): string {
   return text
-    .split(/\n[ \t]*\n/) // paragraphs
+    .split(/\n[ \t]*(?:\n[ \t]*)+/) // paragraphs, separated by one or more blank lines
     .map((para) =>
       para
         .replace(/(\p{L})-\n(\p{Ll})/gu, '$1$2') // re-join words hyphenated across lines (PDF)
-        .replace(/[ \t]*\n[ \t]*/g, ' '),
+        .replace(/[ \t]*\n[ \t]*/g, ' ')
+        .trim(),
     )
     .join('\n\n');
 }
@@ -90,6 +91,18 @@ function dedupeLines(text: string): string {
     .filter((line) => !seen.has(line) && !!seen.add(line))
     .join('\n');
 }
+
+/** Zero-width characters, soft hyphen, BOM, bidi controls, and C0/C1 controls except tab and newline. */
+// eslint-disable-next-line no-control-regex -- stripping control characters is the point
+const INVISIBLE = /[\u200b-\u200d\u2060\ufeff\u00ad\u202a-\u202e\u2066-\u2069]|[\0-\x08\x0b-\x1f\x7f-\x9f]/g;
+
+/** Pictographs plus the pieces emoji are built from: flag letters, skin tones, variation selector, keycap, joiner. */
+const EMOJI =
+  // eslint-disable-next-line no-misleading-character-class -- these modifiers are matched on their own on purpose
+  /\p{Extended_Pictographic}|[\u{1f1e6}-\u{1f1ff}\u{1f3fb}-\u{1f3ff}\ufe0f\u20e3]|\u200d(?=\p{Extended_Pictographic})/gu;
+
+// eslint-disable-next-line no-control-regex -- the full ASCII range starts at NUL
+const NON_ASCII = /[^\x00-\x7f]/g;
 
 const collator = typeof Intl !== 'undefined' ? new Intl.Collator(undefined, { numeric: true }) : null;
 
@@ -120,20 +133,19 @@ export const CLEAN_STEPS: CleanStep[] = [
     label: 'Remove invisible characters',
     hint: 'Zero-width spaces, soft hyphens, control codes',
     group: 'Characters',
-    // Zero-width chars, soft hyphen, BOM, bidi controls, and C0/C1 controls except tab and newline.
-    apply: (t) => t.replace(/[​-‍⁠﻿­‪-‮⁦-⁩]|[\0-\x08\x0b-\x1f\x7f-\x9f]/g, ''),
+    apply: (t) => t.replace(INVISIBLE, ''),
   },
   {
     id: 'fixSpaces',
     label: 'Replace special spaces',
     hint: 'Non-breaking and other odd spaces → normal space',
     group: 'Characters',
-    apply: (t) => t.replace(/[   -   　]/g, ' '),
+    apply: (t) => t.replace(/[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]/g, ' '),
   },
   {
     id: 'straightenPunctuation',
     label: 'Straighten quotes and dashes',
-    hint: '“ ” ‘ ’ → " \' · – — → - · … → ...',
+    hint: 'Curly quotes become straight, long dashes become hyphens',
     group: 'Characters',
     apply: (t) =>
       t
@@ -147,19 +159,14 @@ export const CLEAN_STEPS: CleanStep[] = [
     label: 'Remove emoji',
     hint: 'Including flags, skin tones and joined emoji',
     group: 'Characters',
-    apply: (t) =>
-      t.replace(/\p{Extended_Pictographic}|[\u{1f1e6}-\u{1f1ff}\u{1f3fb}-\u{1f3ff}️⃣]|‍(?=\p{Extended_Pictographic})/gu, ''),
+    apply: (t) => t.replace(EMOJI, ''),
   },
   {
     id: 'asciiOnly',
     label: 'Convert to plain ASCII',
     hint: 'é → e, then drop anything else non-ASCII',
     group: 'Characters',
-    apply: (t) =>
-      t
-        .normalize('NFD')
-        .replace(/\p{M}/gu, '')
-        .replace(/[^\x00-\x7f]/g, ''),
+    apply: (t) => t.normalize('NFD').replace(/\p{M}/gu, '').replace(NON_ASCII, ''),
   },
   {
     id: 'removePunctuation',
@@ -252,7 +259,14 @@ export const CLEAN_PRESETS: CleanPreset[] = [
   {
     id: 'word',
     label: 'Pasted from Word',
-    steps: ['removeInvisible', 'fixSpaces', 'straightenPunctuation', 'collapseSpaces', 'trimLines', 'collapseBlankLines'],
+    steps: [
+      'removeInvisible',
+      'fixSpaces',
+      'straightenPunctuation',
+      'collapseSpaces',
+      'trimLines',
+      'collapseBlankLines',
+    ],
   },
   {
     id: 'web',
@@ -262,7 +276,16 @@ export const CLEAN_PRESETS: CleanPreset[] = [
   {
     id: 'ascii',
     label: 'Plain ASCII',
-    steps: ['normalizeUnicode', 'removeInvisible', 'fixSpaces', 'straightenPunctuation', 'removeEmoji', 'asciiOnly', 'collapseSpaces', 'trimLines'],
+    steps: [
+      'normalizeUnicode',
+      'removeInvisible',
+      'fixSpaces',
+      'straightenPunctuation',
+      'removeEmoji',
+      'asciiOnly',
+      'collapseSpaces',
+      'trimLines',
+    ],
   },
 ];
 

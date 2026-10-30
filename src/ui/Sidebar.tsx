@@ -19,9 +19,15 @@ export function Sidebar({ active, onOpenPalette }: { active: string; onOpenPalet
       <ul class="nav-list">
         {getTools().map((t, i) => (
           <li key={t.id}>
-            <a class="nav-link" href={`#/${t.id}`} aria-current={t.id === active ? 'page' : undefined} title={`${t.name} (Alt+${i + 1})`}>
+            <a
+              class="nav-link"
+              href={`#/${t.id}`}
+              aria-current={t.id === active ? 'page' : undefined}
+              title={`${t.name} (Alt+${i + 1})`}
+            >
               <Icon name={t.icon} size={18} />
-              <span>{t.name}</span>
+              <span class="nav-link__name">{t.name}</span>
+              <span class="nav-link__short">{t.shortName}</span>
             </a>
           </li>
         ))}
