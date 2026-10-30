@@ -133,6 +133,14 @@ describe('Redline', () => {
     page.assertNoErrors();
   });
 
+  test('keeps edits made right before the page is closed', async () => {
+    const page = await open('case');
+    await page.getByLabel('Input', { exact: true }).fill('remember me');
+    await page.reload(); // well inside the 300 ms save delay
+    assert.equal(await page.getByLabel('Input', { exact: true }).inputValue(), 'remember me');
+    page.assertNoErrors();
+  });
+
   test('command palette navigates between tools', async () => {
     const page = await open('diff');
     await page.keyboard.press('Control+k');

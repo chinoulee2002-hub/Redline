@@ -76,12 +76,21 @@ export function toTitleCase(text: string): string {
     .join('\n');
 }
 
+/** A period after these does not end a sentence. */
+const ABBREVIATION_BEFORE = /(?:^|[\s(])(?:i\.e|e\.g|etc|vs|cf|approx|mr|mrs|ms|dr|st|no)$/;
+
 export function toSentenceCase(text: string): string {
   const lower = text.toLowerCase();
   // Capitalise at the start, after sentence punctuation, and at the start of each line.
-  return lower
-    .replace(/(^|[.!?]\s+|\n\s*)(\p{Ll})/gu, (_, lead: string, letter: string) => lead + letter.toUpperCase())
-    .replace(/\bi\b(?=[\s,.!?;:'’]|$)/g, 'I');
+  return (
+    lower
+      .replace(/(^|[.!?]\s+|\n\s*)(\p{Ll})/gu, (_, lead: string, letter: string, offset: number) => {
+        const afterAbbreviation = lead[0] === '.' && ABBREVIATION_BEFORE.test(lower.slice(0, offset));
+        return lead + (afterAbbreviation ? letter : letter.toUpperCase());
+      })
+      // Standalone "i" becomes "I", but not abbreviations such as "i.e.".
+      .replace(/\bi\b(?![.-]\w)(?=[\s,.!?;:'’]|$)/g, 'I')
+  );
 }
 
 /** Splits identifiers and prose alike: "XMLHttpRequest", "snake_case", "some words" → word lists. */

@@ -31,6 +31,12 @@ describe('case conversion', () => {
     );
   });
 
+  it('keeps abbreviations like i.e. lowercase in sentence case', () => {
+    expect(convertCase('use a tool, i.e. this one. i agree.', 'sentence')).toBe(
+      'Use a tool, i.e. this one. I agree.',
+    );
+  });
+
   it('handles Unicode', () => {
     expect(convertCase('straße café', 'upper')).toBe('STRASSE CAFÉ');
     expect(convertCase('élan vital', 'pascal')).toBe('ÉlanVital');

@@ -32,6 +32,16 @@ export function writeStored(key: string, value: unknown): void {
   }
 }
 
+/** Writes waiting for their debounce delay, flushed if the page is closed first. */
+const pendingWrites = new Map<string, unknown>();
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', () => {
+    for (const [key, value] of pendingWrites) writeStored(key, value);
+    pendingWrites.clear();
+  });
+}
+
 /** A signal whose value is restored on load and saved shortly after each change. */
 export function persistedSignal<T>(key: string, initial: T, delayMs = 300): Signal<T> {
   const s = signal<T>(readStored(key, initial));
@@ -43,8 +53,12 @@ export function persistedSignal<T>(key: string, initial: T, delayMs = 300): Sign
       first = false;
       return;
     }
+    pendingWrites.set(key, value);
     clearTimeout(timer);
-    timer = setTimeout(() => writeStored(key, value), delayMs);
+    timer = setTimeout(() => {
+      pendingWrites.delete(key);
+      writeStored(key, value);
+    }, delayMs);
   });
   return s;
 }
