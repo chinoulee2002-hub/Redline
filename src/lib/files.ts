@@ -1,4 +1,5 @@
 /** Reading dropped or picked files into plain text. */
+import { readZipText } from './zip';
 
 export const ACCEPTED_FILES =
   '.txt,.md,.markdown,.csv,.tsv,.json,.html,.htm,.xml,.docx,.rtf,.log,.yaml,.yml,.js,.ts,.py,.css,text/*';
@@ -13,11 +14,9 @@ export async function readFileAsText(file: File): Promise<string> {
 
 /** A .docx is a zip; the body text lives in word/document.xml as <w:p> paragraphs of <w:t> runs. */
 async function readDocx(file: File): Promise<string> {
-  const { default: JSZip } = await import('jszip');
-  const zip = await JSZip.loadAsync(await file.arrayBuffer());
-  const entry = zip.file('word/document.xml');
-  if (!entry) throw new Error('This does not look like a Word document.');
-  const xml = new DOMParser().parseFromString(await entry.async('string'), 'application/xml');
+  const documentXml = await readZipText(await file.arrayBuffer(), 'word/document.xml').catch(() => null);
+  if (documentXml === null) throw new Error('This does not look like a Word document.');
+  const xml = new DOMParser().parseFromString(documentXml, 'application/xml');
   const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
   const paragraphs = Array.from(xml.getElementsByTagNameNS(W, 'p'));
   return paragraphs

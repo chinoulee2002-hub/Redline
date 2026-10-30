@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@preact/signals": "2.11.4",
-    "jszip": "3.10.2",
     "preact": "10.29.8"
   },
   "devDependencies": {

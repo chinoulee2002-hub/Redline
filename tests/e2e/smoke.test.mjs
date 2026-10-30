@@ -6,6 +6,7 @@ import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
+import { makeDocx } from '../helpers/zip.mjs';
 
 const APP = pathToFileURL(fileURLToPath(new URL('../../dist/index.html', import.meta.url))).href;
 
@@ -51,6 +52,21 @@ describe('Redline', () => {
     await page.getByLabel('Original text').fill('Remote Work Rules');
     await page.getByText('1 place changed').waitFor();
     assert.equal(await page.locator('.sheet ins').first().textContent(), 'Policy');
+    page.assertNoErrors();
+  });
+
+  test('diff imports a Word document', async () => {
+    const page = await open('diff');
+    await page
+      .locator('input[type=file]')
+      .first()
+      .setInputFiles({
+        name: 'contract.docx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        buffer: makeDocx(['First clause & terms', 'Second clause']),
+      });
+    await page.getByText('contract.docx').waitFor();
+    assert.equal(await page.getByLabel('Original text').inputValue(), 'First clause & terms\nSecond clause');
     page.assertNoErrors();
   });
 
