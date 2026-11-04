@@ -1,44 +1,70 @@
-.cleaner {
-  display: grid;
-  grid-template-columns: 290px minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-.cleaner__editors {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-.steps {
-  position: sticky;
-  top: 16px;
+/* Text Cleaner: a two-row toolbar (presets and step groups, then the steps that run), above full-width editors. */
+.cleaner-bar {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  max-height: calc(100dvh - 32px);
+}
+.cleaner-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+}
+.cleaner-bar__row + .cleaner-bar__row {
+  border-top: 1px solid var(--line);
+}
+.cleaner-bar__presets,
+.cleaner-bar__groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.cleaner-bar .optionbar__label {
+  margin: 0 2px 0 0;
+}
+.chip--preset {
+  padding: 0 14px;
+}
+.chip--menu {
+  gap: 6px;
+  padding: 0 10px 0 14px;
+}
+.chip__count {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+.chip--menu[aria-expanded='true'] .icon {
+  transform: rotate(180deg);
+}
+.chip--menu .icon {
+  transition: transform var(--fast) var(--ease);
+}
+
+/* The checklist inside a group menu. `.menu.` outranks the shared .menu rules, which load later. */
+.menu.step-menu {
+  left: 0;
+  right: auto;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(70vh, 480px);
   overflow-y: auto;
-  padding: 14px 10px 14px 14px;
 }
-.steps__intro {
-  color: var(--faint);
-  font-size: 12.5px;
-}
-.steps__group {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.steps__group .section-label {
-  margin-bottom: 4px;
-  padding: 0;
+.menu.step-menu--right {
+  left: auto;
+  right: 0;
 }
 .step {
   display: flex;
   gap: 10px;
-  padding: 7px 8px;
+  padding: 8px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--fast) var(--ease);
@@ -98,26 +124,98 @@
   font-size: 11px;
   font-weight: 550;
 }
-.chip--preset {
-  padding: 0 14px;
+
+/* The steps that run, numbered in order. */
+.active-steps {
+  gap: 6px;
+  background: var(--surface-2);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.active-steps--none {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.active-steps__list {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+/* The number is drawn by CSS from the list order, so it always matches the run order. */
+.step-chip::before {
+  counter-increment: step;
+  content: counter(step);
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--sunken);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.step-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 4px 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.step-chip button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+}
+.step-chip button:hover {
+  background: var(--sunken);
+  color: var(--del-ink);
+}
+.step-chip.is-idle {
+  color: var(--muted);
+  border-style: dashed;
+}
+
+/* Editors take the rest of the screen. */
+.cleaner__editors .editor {
+  min-height: clamp(320px, calc(100dvh - 380px), 900px);
 }
 .savings {
   color: var(--add-ink);
   font-weight: 550;
 }
 
-@media (max-width: 1180px) {
-  .cleaner__editors {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
 @media (max-width: 860px) {
-  .cleaner {
-    grid-template-columns: minmax(0, 1fr);
+  /* On phones a group's checklist opens as a sheet above the tab bar. */
+  .menu.step-menu {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    top: auto;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-height: 60vh;
   }
-  .steps {
-    position: static;
-    max-height: none;
-    order: 2;
+  .cleaner__editors .editor {
+    min-height: 260px;
   }
 }

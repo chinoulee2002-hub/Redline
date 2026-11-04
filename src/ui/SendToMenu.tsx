@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
 import { getTools, sendTo } from '../tools/workspace';
 import type { SentText } from '../tools/types';
 import { Button } from './Button';
 import { Icon } from './Icon';
+import { usePopover } from './usePopover';
 
 /** "Send to" button with a menu of the other tools that accept text. */
 export function SendToMenu({
@@ -14,24 +14,8 @@ export function SendToMenu({
   payload: () => SentText;
   disabled?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  const root = useRef<HTMLDivElement>(null);
+  const { open, setOpen, root } = usePopover<HTMLDivElement>();
   const targets = getTools().filter((t) => t.id !== from && t.receive);
-
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: Event) => {
-      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !root.current?.contains(e.target as Node))
-        setOpen(false);
-    };
-    document.addEventListener('pointerdown', close);
-    document.addEventListener('keydown', close);
-    root.current?.querySelector<HTMLButtonElement>('.menu button')?.focus();
-    return () => {
-      document.removeEventListener('pointerdown', close);
-      document.removeEventListener('keydown', close);
-    };
-  }, [open]);
 
   return (
     <div class="menu-anchor" ref={root}>
