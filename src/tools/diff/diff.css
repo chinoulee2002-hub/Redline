@@ -1,5 +1,6 @@
 /* Diff checker: summary card, change map, and the comparison sheet. */
-.results {
+.results,
+.sheet-wrap {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -264,5 +265,238 @@ ins {
   }
   .map-key__hint {
     margin-left: 0;
+  }
+}
+
+/* ---------- Change numbers and keep/reject ---------- */
+.chg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 17px;
+  margin: 0 3px 0 1px;
+  padding: 0 4px;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: 700 10.5px/1 var(--font-ui);
+  vertical-align: 2px;
+  user-select: none;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+.chg:hover {
+  transform: scale(1.08);
+}
+.chg.is-rejected {
+  border-color: var(--line-strong);
+  background: var(--surface);
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+/* A rejected insertion fades out; a rejected deletion is restored (shown as plain, underlined text). */
+ins.is-rejected {
+  background: transparent;
+  color: var(--faint);
+  text-decoration: line-through;
+}
+del.is-rejected {
+  background: transparent;
+  color: var(--ink);
+  text-decoration: underline 2px var(--accent);
+  text-underline-offset: 3px;
+}
+.row.is-rejected .cell--right,
+.line--insert.is-rejected .cell {
+  color: var(--faint);
+  text-decoration: line-through;
+  background: var(--surface-2);
+}
+.row.is-rejected .cell--left,
+.line--delete.is-rejected .cell {
+  color: var(--ink);
+  text-decoration: none;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+
+/* ---------- Review panel ---------- */
+.review {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.review__list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.review__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px 12px;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.review__head h2 {
+  font-size: 15px;
+  font-weight: 650;
+}
+.review__bulk {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.review__count {
+  margin-right: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.review__count b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.review__items {
+  max-height: 520px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+}
+.review-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  border-radius: var(--radius-sm);
+  transition: background var(--fast) var(--ease);
+}
+.review-item:hover {
+  background: var(--surface-2);
+}
+.review-item__check {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 4px 9px 8px;
+  cursor: pointer;
+}
+.review-item__check input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.review-item__check:has(input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+.tick {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--accent);
+  border-radius: 5px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  transition: all var(--fast) var(--ease);
+}
+.is-rejected .tick {
+  border-color: var(--line-strong);
+  background: transparent;
+  color: transparent;
+}
+.review-item__id {
+  min-width: 30px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.review-item.is-rejected .review-item__id {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.review-item__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 10px 8px 4px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+.review-item__meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+.kind {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 650;
+}
+.kind--replace {
+  background: color-mix(in srgb, var(--chg) 18%, transparent);
+  color: var(--ink);
+}
+.kind--insert {
+  background: var(--add-bg);
+  color: var(--add-ink);
+}
+.kind--delete {
+  background: var(--del-bg);
+  color: var(--del-ink);
+}
+.review-item__text {
+  font-family: var(--font-doc);
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.review-item__arrow {
+  color: var(--faint);
+}
+.review-item.is-rejected .review-item__text {
+  opacity: 0.55;
+}
+.review__out {
+  position: sticky;
+  top: 72px;
+}
+.review__text {
+  min-height: 420px;
+  max-height: 60vh;
+  font-size: 12.5px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 860px) {
+  /* The toolbar wraps to several rows on phones; sticking, it would cover the text. */
+  .toolbar {
+    position: static;
+  }
+}
+@media (max-width: 1000px) {
+  .review {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .review__out {
+    position: static;
   }
 }

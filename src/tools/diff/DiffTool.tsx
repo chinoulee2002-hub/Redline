@@ -87,7 +87,12 @@ function DiffResults() {
   const { ignoreWhitespace, ignoreCase, detail } = settings.value;
   const ready = a.trim() !== '' && b.trim() !== '';
   const size = a.length + b.length;
-  const { result, pending, error } = useTask(
+  const {
+    result,
+    input: compared,
+    pending,
+    error,
+  } = useTask(
     diffRunner,
     'diff',
     ready ? { original: a, revised: b, options: { ignoreWhitespace, ignoreCase, detail } } : null,
@@ -110,6 +115,8 @@ function DiffResults() {
       result={result}
       pending={pending}
       names={{ original: originalName.value || 'Original', revised: revisedName.value || 'Changed' }}
+      // The settled input object is stable between renders, unlike a fresh { original, revised }.
+      texts={compared ?? { original: a, revised: b }}
     />
   );
 }

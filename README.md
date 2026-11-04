@@ -4,7 +4,7 @@ Five text tools in one fast, private web app:
 
 | Tool | What it does |
 |---|---|
-| **Diff Checker** | Compares two texts and highlights added, removed and reworded words or characters. Side-by-side or single-column view, change map, J/K navigation, HTML report export. Opens `.txt`, `.md`, `.html`, `.docx` and more. |
+| **Diff Checker** | Compares two texts and highlights added, removed and reworded words or characters. Every change is numbered: tick the ones to keep, then copy either numbered instructions for an AI ("keep #1, reject #2…") or the final text with your choices applied. Side-by-side or single-column view, change map, J/K navigation, HTML report export. Opens `.txt`, `.md`, `.html`, `.docx` and more. |
 | **Case Converter** | Converts to UPPER, lower, Title, Sentence, camelCase, PascalCase, snake_case, kebab-case, CONSTANT_CASE, dot.case and novelty cases. Unicode-aware. |
 | **Regex Playground** | Highlights matches live, lists capture groups (numbered and named), previews replacements, and includes a cheat sheet. Runaway patterns are stopped after 300 ms. |
 | **Word Frequency** | Ranks words or 2–3 word phrases, with stopword filtering, totals, reading time and CSV export. |
@@ -79,6 +79,17 @@ user types ─▶ signal (tools/<x>/state.ts) ─▶ component reads it
 - **`useTask`** (`lib/useTask.ts`) debounces input, meaning it waits for typing to pause, then sends the task and keeps the last good result on screen while the next one computes.
 - **`TaskRunner`** (`workers/runner.ts`) keeps one worker per tool. It runs at most one task at a time and keeps only the newest waiting request. With a timeout, it terminates the worker and starts a fresh one. If workers are blocked, tasks run on the main thread instead.
 - **`workers/handlers.ts`** is the single list of background tasks. Input and output types flow from it to every caller.
+
+### Reviewing changes
+
+`compareTexts` (`core/diff.ts`) numbers every edit as a `Change`: one reworded phrase inside a line, one rewritten line, or one run of added or removed lines. Ids come from the word-level diff, so they don't change with the Words/Characters/Lines display setting. Every displayed segment and every row's `edits` carry their change id.
+
+`core/review.ts` turns decisions into output:
+
+- `applyDecisions(rows, rejected)` rebuilds the text, reverting rejected changes.
+- `buildReviewPrompt(changes, rejected, options)` writes the AI instructions.
+
+Decisions are stored by `Change.key` (kind, texts and occurrence number) rather than by id, so they survive edits elsewhere in the text and page reloads.
 
 ### Performance notes
 

@@ -68,6 +68,36 @@ describe('Redline', () => {
     page.assertNoErrors();
   });
 
+  test('diff review: number badges, keep/reject, AI instructions and final text', async () => {
+    const page = await open('diff');
+    await page.getByText('3 places changed').waitFor();
+    const items = page.locator('.review-item');
+    assert.equal(await items.count(), 6);
+
+    // Clicking a number in the text rejects that change and unticks it in the list.
+    await page.locator('.sheet .chg[data-change="2"]').click();
+    assert.equal(await page.getByLabel('Keep change #2').isChecked(), false);
+    const output = page.getByLabel('Review output');
+    await page.waitForFunction(() => document.querySelector('.review__text')?.value.includes('#2 REJECT'));
+    assert.match(await output.inputValue(), /Reject \(1\): #2\n/);
+    assert.match(await output.inputValue(), /#1 KEEP · line 3 · replaced "from home" with "remotely"/);
+
+    await page.getByRole('radio', { name: 'Final text' }).click();
+    assert.match(await output.inputValue(), /may work remotely up to two days per week/);
+
+    await page.getByRole('button', { name: 'Reject all' }).click();
+    assert.equal(await output.inputValue(), await page.getByLabel('Original text').inputValue());
+    await page.getByRole('button', { name: 'Keep all' }).click();
+    assert.equal(await output.inputValue(), await page.getByLabel('Changed text').inputValue());
+
+    // Decisions are remembered across reloads.
+    await page.getByLabel('Keep change #6').uncheck();
+    await page.reload();
+    await page.locator('.review-item').first().waitFor();
+    assert.equal(await page.getByLabel('Keep change #6').isChecked(), false);
+    page.assertNoErrors();
+  });
+
   test('diff imports a Word document', async () => {
     const page = await open('diff');
     await page

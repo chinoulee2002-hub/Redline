@@ -20,6 +20,8 @@ export type SegmentType = 'equal' | 'delete' | 'insert';
 export interface Segment {
   type: SegmentType;
   text: string;
+  /** Id of the change this text belongs to (see `DiffResult.changes`); absent on unchanged text. */
+  change?: number;
 }
 
 export type RowType = 'equal' | 'change' | 'delete' | 'insert';
@@ -40,6 +42,37 @@ export interface DiffRow {
   rewritten: boolean;
   /** 0 for unchanged rows; otherwise the 1-based number of the change block this row belongs to. */
   block: number;
+  /**
+   * The row as word-level edits tagged with change ids, whatever the display detail.
+   * Used to rebuild the text from keep/reject decisions (see core/review.ts).
+   */
+  edits: Segment[];
+}
+
+export type ChangeKind = 'replace' | 'insert' | 'delete';
+
+/** One numbered, separately reviewable edit. */
+export interface Change {
+  /** 1-based, in document order. */
+  id: number;
+  /**
+   * Identifies the same edit across recomputes (kind, texts and occurrence),
+   * so a keep/reject decision survives edits elsewhere in the text.
+   */
+  key: string;
+  kind: ChangeKind;
+  /** Original wording ('' for insertions). */
+  before: string;
+  /** New wording ('' for deletions). */
+  after: string;
+  /** Where it is: lines of the new text, or of the original for removed lines. */
+  where: { side: 'original' | 'revised'; from: number; to: number };
+  /** The full line the change is in, to help locate it. */
+  context: string;
+  /** The change is entire lines (added, removed or rewritten), not words inside a line. */
+  wholeLines: boolean;
+  /** The change block (see `DiffRow.block`) containing it. */
+  block: number;
 }
 
 export interface DiffStats {
@@ -57,6 +90,8 @@ export interface DiffStats {
 
 export interface DiffResult {
   rows: DiffRow[];
+  /** Every edit, numbered in document order. */
+  changes: Change[];
   stats: DiffStats;
   /** The texts were too different for an exact diff; some changes are shown coarsely. */
   approximate: boolean;
@@ -94,6 +129,23 @@ export function compareTexts(original: string, revised: string, options: DiffOpt
     retainedPercent: 0,
   };
 
+  const changes: Change[] = [];
+  const record: RecordChange = (before, after, where, context, wholeLines = false) => {
+    const kind: ChangeKind = before && after ? 'replace' : before ? 'delete' : 'insert';
+    changes.push({
+      id: changes.length + 1,
+      key: '',
+      kind,
+      before,
+      after,
+      where,
+      context,
+      wholeLines,
+      block: 0,
+    });
+    return changes.length;
+  };
+
   const { ops } = script;
   let i = 0;
   while (i < ops.length) {
@@ -114,19 +166,33 @@ export function compareTexts(original: string, revised: string, options: DiffOpt
       if (edit.type === 'delete') removed.push(edit.a);
       else added.push(edit.b);
     }
-    const pairs = Math.max(removed.length, added.length);
-    for (let q = 0; q < pairs; q++) {
-      const ai = removed[q];
-      const bi = added[q];
-      if (ai !== undefined && bi !== undefined) rows.push(changedPair(a[ai], b[bi], ai, bi, options, stats));
-      else if (ai !== undefined) {
+    const paired = Math.min(removed.length, added.length);
+    for (let q = 0; q < paired; q++) {
+      rows.push(changedPair(a[removed[q]], b[added[q]], removed[q], added[q], options, stats, record));
+    }
+    // Lines left over after pairing were purely removed (or purely added): one change for the run.
+    const extraRemoved = removed.slice(paired);
+    const extraAdded = added.slice(paired);
+    if (extraRemoved.length) {
+      const text = extraRemoved.map((ai) => a[ai]).join('\n');
+      const from = extraRemoved[0] + 1;
+      const where = { side: 'original', from, to: from + extraRemoved.length - 1 } as const;
+      const id = record(text, '', where, a[extraRemoved[0]], true);
+      for (const ai of extraRemoved) {
         stats.linesChanged++;
         stats.wordsRemoved += countWords(a[ai]);
-        rows.push(wholeLineRow('delete', a[ai], ai + 1, null));
-      } else {
+        rows.push(wholeLineRow('delete', a[ai], ai + 1, null, id));
+      }
+    }
+    if (extraAdded.length) {
+      const text = extraAdded.map((bi) => b[bi]).join('\n');
+      const from = extraAdded[0] + 1;
+      const where = { side: 'revised', from, to: from + extraAdded.length - 1 } as const;
+      const id = record('', text, where, b[extraAdded[0]], true);
+      for (const bi of extraAdded) {
         stats.linesChanged++;
         stats.wordsAdded += countWords(b[bi]);
-        rows.push(wholeLineRow('insert', b[bi], null, bi + 1));
+        rows.push(wholeLineRow('insert', b[bi], null, bi + 1, id));
       }
     }
   }
@@ -136,15 +202,38 @@ export function compareTexts(original: string, revised: string, options: DiffOpt
   for (const row of rows) {
     const changed = row.type !== 'equal';
     if (changed && !previousChanged) block++;
-    if (changed) row.block = block;
+    if (changed) {
+      row.block = block;
+      for (const seg of row.edits) if (seg.change) changes[seg.change - 1].block = block;
+    }
     previousChanged = changed;
   }
+  assignKeys(changes);
   stats.blocks = block;
   stats.retainedPercent = stats.originalWords
     ? Math.max(0, Math.round((100 * (stats.originalWords - stats.wordsRemoved)) / stats.originalWords))
     : 0;
 
-  return { rows, stats, approximate: script.approximate };
+  return { rows, changes, stats, approximate: script.approximate };
+}
+
+type RecordChange = (
+  before: string,
+  after: string,
+  where: Change['where'],
+  context: string,
+  wholeLines?: boolean,
+) => number;
+
+/** Key = kind + texts + how many identical edits came before, e.g. "replace|two|three|0". */
+function assignKeys(changes: Change[]): void {
+  const seen = new Map<string, number>();
+  for (const c of changes) {
+    const base = `${c.kind}\u0000${c.before}\u0000${c.after}`;
+    const n = seen.get(base) ?? 0;
+    seen.set(base, n + 1);
+    c.key = `${base}\u0000${n}`;
+  }
 }
 
 function normalizeLine(line: string, options: DiffOptions): string {
@@ -164,6 +253,7 @@ function equalRow(left: string, right: string, ai: number, bi: number): DiffRow 
     merged: [{ type: 'equal', text: right }],
     rewritten: false,
     block: 0,
+    edits: [{ type: 'equal', text: right }],
   };
 }
 
@@ -172,8 +262,9 @@ function wholeLineRow(
   text: string,
   leftLine: number | null,
   rightLine: number | null,
+  change: number,
 ): DiffRow {
-  const seg: Segment[] = [{ type, text }];
+  const seg: Segment[] = [{ type, text, change }];
   return {
     type,
     leftLine,
@@ -183,6 +274,7 @@ function wholeLineRow(
     merged: seg,
     rewritten: false,
     block: 0,
+    edits: seg,
   };
 }
 
@@ -193,6 +285,7 @@ function changedPair(
   bi: number,
   options: DiffOptions,
   stats: DiffStats,
+  record: RecordChange,
 ): DiffRow {
   // Word-level diff decides how to show the pair and feeds the statistics in every detail mode.
   const words = inlineDiff(diffTokens(left), diffTokens(right), options, isWhitespace);
@@ -202,7 +295,11 @@ function changedPair(
     stats.linesChanged++;
     stats.wordsAdded += words.inserted;
     stats.wordsRemoved += words.deleted;
-    if (options.detail === 'line') return rewrittenRow(left, right, ai, bi);
+    numberEdits(words.pieces, (before, after) =>
+      record(before, after, { side: 'revised', from: bi + 1, to: bi + 1 }, right),
+    );
+    const edits = toSegments(words.pieces).merged;
+    if (options.detail === 'line') return rewrittenRow(left, right, ai, bi, edits);
     const shown = toSegments(
       options.detail === 'char' ? refineByCharacters(words.pieces, options) : words.pieces,
     );
@@ -213,9 +310,10 @@ function changedPair(
       ...shown,
       rewritten: false,
       block: 0,
+      edits,
     };
   }
-  if (sameWords) {
+  if (sameWords && options.ignoreWhitespace) {
     // Only ignored differences (e.g. whitespace on a blank line): treat as unchanged.
     stats.linesUnchanged++;
     return equalRow(left, right, ai, bi);
@@ -223,10 +321,28 @@ function changedPair(
   stats.linesChanged++;
   stats.wordsRemoved += countWords(left);
   stats.wordsAdded += countWords(right);
-  return rewrittenRow(left, right, ai, bi);
+  const id = record(left, right, { side: 'revised', from: bi + 1, to: bi + 1 }, right, true);
+  return rewrittenRow(left, right, ai, bi, [
+    { type: 'delete', text: left, change: id },
+    { type: 'insert', text: right, change: id },
+  ]);
 }
 
-function rewrittenRow(left: string, right: string, ai: number, bi: number): DiffRow {
+/** Gives each edit (a delete, an insert, or a delete followed by an insert) its own change id. */
+function numberEdits(pieces: Piece[], record: (before: string, after: string) => number): void {
+  for (let i = 0; i < pieces.length; i++) {
+    const p = pieces[i];
+    if (p.type === 'equal') continue;
+    const next = pieces[i + 1];
+    if (p.type === 'delete' && next?.type === 'insert') {
+      p.change = next.change = record(p.a, next.b);
+      i++;
+    } else p.change = p.type === 'delete' ? record(p.a, '') : record('', p.b);
+  }
+}
+
+/** A row drawn as one removed and one added line; `edits` still carries the individual changes. */
+function rewrittenRow(left: string, right: string, ai: number, bi: number, edits: Segment[]): DiffRow {
   return {
     type: 'change',
     leftLine: ai + 1,
@@ -239,6 +355,7 @@ function rewrittenRow(left: string, right: string, ai: number, bi: number): Diff
     ],
     rewritten: true,
     block: 0,
+    edits,
   };
 }
 
@@ -247,6 +364,7 @@ interface Piece {
   type: SegmentType;
   a: string;
   b: string;
+  change?: number;
 }
 
 interface InlineDiff {
@@ -289,7 +407,9 @@ function inlineDiff(
   });
 
   // Group first so the absorb check sees whole unchanged runs, then regroup what it produced.
-  const tidy = groupPieces(absorbShortEquals(groupPieces(pieces), absorbIfBetweenChanges));
+  const tidy = trimSharedWhitespace(
+    groupPieces(absorbShortEquals(groupPieces(pieces), absorbIfBetweenChanges)),
+  );
   const wordsA = aTokens.filter((t) => !isWhitespace(t)).length;
   const wordsB = bTokens.filter((t) => !isWhitespace(t)).length;
   return { pieces: tidy, kept, deleted, inserted, similarity: kept / Math.max(1, wordsA, wordsB) };
@@ -319,7 +439,7 @@ function refineByCharacters(pieces: Piece[], options: DiffOptions): Piece[] {
       const shared = chars.pieces.reduce((n, p) => (p.type === 'equal' ? n + Array.from(p.a).length : n), 0);
       const longer = Math.max(Array.from(del.a).length, Array.from(ins.b).length);
       if (shared / longer >= CHAR_SIMILARITY_THRESHOLD) {
-        out.push(...chars.pieces);
+        for (const c of chars.pieces) out.push(c.type === 'equal' ? c : { ...c, change: del.change });
         i++;
         continue;
       }
@@ -334,9 +454,10 @@ function toSegments(pieces: Piece[]): Pick<DiffRow, 'left' | 'right' | 'merged'>
   const right: Segment[] = [];
   const merged: Segment[] = [];
   for (const p of pieces) {
-    if (p.type !== 'insert') left.push({ type: p.type, text: p.a });
-    if (p.type !== 'delete') right.push({ type: p.type, text: p.b });
-    merged.push({ type: p.type, text: p.type === 'delete' ? p.a : p.b });
+    const change = p.change;
+    if (p.type !== 'insert') left.push({ type: p.type, text: p.a, change });
+    if (p.type !== 'delete') right.push({ type: p.type, text: p.b, change });
+    merged.push({ type: p.type, text: p.type === 'delete' ? p.a : p.b, change });
   }
   return { left, right, merged };
 }
@@ -358,7 +479,51 @@ function absorbShortEquals(pieces: Piece[], shouldAbsorb: (text: string) => bool
   return out;
 }
 
-/** Merges neighbours of the same kind and orders each edit run as "all deletions, then all insertions". */
+/**
+ * Moves whitespace that an edit's old and new text both start or end with out
+ * of the edit: "from home␣" → "remotely␣" becomes "from home" → "remotely",
+ * and "␣" → ", a monitor␣" becomes a plain insertion of ", a monitor".
+ */
+function trimSharedWhitespace(pieces: Piece[]): Piece[] {
+  const out: Piece[] = [];
+  for (let i = 0; i < pieces.length; i++) {
+    const del = pieces[i];
+    const ins = pieces[i + 1];
+    if (del.type !== 'delete' || ins?.type !== 'insert') {
+      out.push(del);
+      continue;
+    }
+    const lead = commonPrefix(del.a.match(/^\s*/)![0], ins.b.match(/^\s*/)![0]);
+    let a = del.a.slice(lead.length);
+    let b = ins.b.slice(lead.length);
+    const trail = commonSuffix(a.match(/\s*$/)![0], b.match(/\s*$/)![0]);
+    a = a.slice(0, a.length - trail.length);
+    b = b.slice(0, b.length - trail.length);
+    if (lead) out.push({ type: 'equal', a: lead, b: lead });
+    if (a) out.push({ type: 'delete', a, b: '' });
+    if (b) out.push({ type: 'insert', a: '', b });
+    if (trail) out.push({ type: 'equal', a: trail, b: trail });
+    i++;
+  }
+  return groupPieces(out);
+}
+
+function commonPrefix(x: string, y: string): string {
+  let n = 0;
+  while (n < x.length && n < y.length && x[n] === y[n]) n++;
+  return x.slice(0, n);
+}
+
+function commonSuffix(x: string, y: string): string {
+  let n = 0;
+  while (n < x.length && n < y.length && x[x.length - 1 - n] === y[y.length - 1 - n]) n++;
+  return x.slice(x.length - n);
+}
+
+/**
+ * Merges neighbours of the same kind and orders each edit run as "all deletions, then all insertions".
+ * Edits belonging to different numbered changes are never merged.
+ */
 function groupPieces(pieces: Piece[]): Piece[] {
   const out: Piece[] = [];
   let i = 0;
@@ -373,14 +538,15 @@ function groupPieces(pieces: Piece[]): Piece[] {
       out.push({ type: 'equal', a, b });
       continue;
     }
+    const change = pieces[i].change;
     let del = '';
     let ins = '';
-    for (; i < pieces.length && pieces[i].type !== 'equal'; i++) {
+    for (; i < pieces.length && pieces[i].type !== 'equal' && pieces[i].change === change; i++) {
       del += pieces[i].a;
       ins += pieces[i].b;
     }
-    if (del) out.push({ type: 'delete', a: del, b: '' });
-    if (ins) out.push({ type: 'insert', a: '', b: ins });
+    if (del) out.push({ type: 'delete', a: del, b: '', change });
+    if (ins) out.push({ type: 'insert', a: '', b: ins, change });
   }
   return out;
 }
