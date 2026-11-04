@@ -3,16 +3,66 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="description" content="Fast, private text tools: diff checker, case converter, regex playground, word frequency and text cleaner." />
+    <meta
+      name="description"
+      content="Fast, private text tools: diff checker, case converter, regex playground, word frequency and text cleaner."
+    />
     <meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0e1217" media="(prefers-color-scheme: dark)" />
-    <title>Redline</title>
+    <title>Redline Text Tools</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap"
     />
+    <style>
+      /* Startup message: hidden for the first moment so it never flashes while the app loads. */
+      .boot {
+        box-sizing: border-box;
+        width: calc(100% - 32px);
+        max-width: 560px;
+        margin: 12vh auto;
+        padding: 28px;
+        border: 1px solid #e3e7ec;
+        border-radius: 14px;
+        background: #fff;
+        color: #131a22;
+        font:
+          16px/1.55 system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        opacity: 0;
+        animation: boot-show 0.2s 1.5s forwards;
+      }
+      .boot h1 {
+        margin: 0 0 10px;
+        font-size: 22px;
+      }
+      .boot p {
+        margin: 0 0 12px;
+      }
+      .boot__small {
+        color: #5d6a78;
+        font-size: 14px;
+      }
+      @keyframes boot-show {
+        to {
+          opacity: 1;
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+        .boot {
+          background: #161b22;
+          border-color: #262e38;
+          color: #e6ebf1;
+        }
+        .boot__small {
+          color: #94a1af;
+        }
+      }
+    </style>
     <script>
       // Apply the saved theme before first paint so dark-mode users never see a white flash.
       try {
@@ -22,7 +72,23 @@
     </script>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <!-- Replaced as soon as the app starts. Visible only where scripts can't run. -->
+      <div class="boot" role="alert">
+        <h1>Redline didn't start</h1>
+        <p>
+          This page is an app, and the place it was opened in can't run apps. That's usual for file previews
+          such as the iPhone Files app, or email and chat attachment viewers.
+        </p>
+        <p>
+          Open the file in a web browser instead: Chrome, Safari, Edge or Firefox. On a computer, double-click
+          it or drag it into a browser window.
+        </p>
+        <p class="boot__small">
+          Already in a browser? Make sure JavaScript is on and the browser is up to date.
+        </p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

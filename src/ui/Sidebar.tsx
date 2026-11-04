@@ -21,7 +21,7 @@ export function Sidebar({ active, onOpenPalette }: { active: string; onOpenPalet
           <li key={t.id}>
             <a
               class="nav-link"
-              href={`#/${t.id}`}
+              href={`#${t.id}`}
               aria-current={t.id === active ? 'page' : undefined}
               title={`${t.name} (Alt+${i + 1})`}
             >

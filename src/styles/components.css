@@ -650,3 +650,22 @@ kbd {
     font-size: 16px;
   }
 }
+
+/* ---------- Crash panel (ErrorBoundary) ---------- */
+.crash {
+  gap: 10px;
+}
+.crash__detail {
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--sunken);
+  color: var(--del-ink);
+  font: 12.5px var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.crash__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}

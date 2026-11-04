@@ -1,4 +1,8 @@
-/** Hash routing: "#/regex" shows the regex tool. Hashes work from file:// and need no server. */
+/**
+ * Hash routing: "#regex" shows the regex tool. Hashes work from file:// and need no server.
+ * Plain names (not "#/regex") also survive hosts such as claude.ai that keep only "#name";
+ * older "#/regex" links still work.
+ */
 import { signal } from '@preact/signals';
 
 function readHash(): string {
@@ -12,5 +16,5 @@ window.addEventListener('hashchange', () => {
 });
 
 export function navigate(id: string): void {
-  if (readHash() !== id) location.hash = '/' + id;
+  if (readHash() !== id) location.hash = id;
 }

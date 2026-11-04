@@ -26,7 +26,7 @@ async function open(hash, { noWorkers = false } = {}) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  await page.goto(`${APP}#/${hash}`);
+  await page.goto(`${APP}#${hash}`);
   page.assertNoErrors = () => assert.deepEqual(errors, []);
   return page;
 }
@@ -170,7 +170,7 @@ describe('Redline', () => {
 
     await page.getByRole('button', { name: 'Send to' }).click();
     await page.getByRole('menuitem', { name: 'Diff Checker' }).click();
-    await page.waitForURL(/#\/diff$/);
+    await page.waitForURL(/#diff$/);
     assert.equal(await page.getByLabel('Changed text').inputValue(), output);
     await page.locator('.summary__verdict').waitFor();
     page.assertNoErrors();
@@ -189,7 +189,7 @@ describe('Redline', () => {
     await page.keyboard.press('Control+k');
     await page.getByLabel('Search tools and actions').fill('regex');
     await page.keyboard.press('Enter');
-    await page.waitForURL(/#\/regex$/);
+    await page.waitForURL(/#regex$/);
     await page.getByRole('heading', { name: 'Regex Playground' }).waitFor();
     page.assertNoErrors();
   });

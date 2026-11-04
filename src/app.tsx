@@ -3,6 +3,7 @@ import { route, navigate } from './lib/router';
 import { findTool, getTools } from './tools/workspace';
 import { CommandPalette } from './ui/CommandPalette';
 import { Sidebar } from './ui/Sidebar';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 import { Toasts } from './ui/Toasts';
 
 export function App() {
@@ -37,7 +38,9 @@ export function App() {
     <div class="app">
       <Sidebar active={active.id} onOpenPalette={() => setPaletteOpen(true)} />
       <main class="main" id="main">
-        <Tool key={active.id} />
+        <ErrorBoundary key={active.id} toolId={active.id}>
+          <Tool />
+        </ErrorBoundary>
       </main>
       {paletteOpen && <CommandPalette activeId={active.id} onClose={() => setPaletteOpen(false)} />}
       <Toasts />

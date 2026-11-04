@@ -18,6 +18,10 @@ Everything runs in the browser. No text leaves the device.
 
 Open `Redline.html`. It is one self-contained file (about 140 KB, 44 KB gzipped) that works offline, from disk or from any static host. Fonts come from Google Fonts when online and fall back to system fonts otherwise.
 
+Open it in a web browser (Chrome, Safari, Edge or Firefox; 2020 or newer). File previews, such as the iPhone Files app or email and chat attachment viewers, can't run apps; they show a "Redline didn't start" message instead.
+
+`npm run release` also writes `dist/artifact.html`: the same page without its `<html>`/`<head>`/`<body>` wrapper, for publishing as a claude.ai artifact. There, downloads go through the host's `downloads` capability (see `lib/download.ts`).
+
 Keyboard: `Ctrl/⌘ K` opens the command palette, `Alt 1–5` switches tools, and in the Diff Checker `J`/`K` step through changes.
 
 ## Development

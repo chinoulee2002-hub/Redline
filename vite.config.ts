@@ -6,7 +6,8 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 export default defineConfig({
   plugins: [viteSingleFile({ removeViteModuleLoader: true })],
   esbuild: { jsx: 'automatic', jsxImportSource: 'preact' },
-  build: { target: 'es2022', reportCompressedSize: true },
+  // Safari 14 (2020) and later: covers older iPhones and Macs that no longer update.
+  build: { target: ['es2020', 'safari14'], reportCompressedSize: true },
   worker: { format: 'iife' },
   test: { include: ['tests/unit/**/*.test.ts'], environment: 'node' },
 });

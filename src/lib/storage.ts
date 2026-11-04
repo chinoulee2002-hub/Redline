@@ -13,12 +13,35 @@ export function readStored<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(PREFIX + key);
     if (raw === null) return fallback;
-    const value = JSON.parse(raw) as T;
-    // Merge saved objects over defaults so settings added in later versions get their default.
-    if (isPlainObject(fallback) && isPlainObject(value)) return { ...fallback, ...value };
-    return typeof value === typeof fallback ? value : fallback;
+    const value: unknown = JSON.parse(raw);
+    if (isPlainObject(fallback)) {
+      if (!isPlainObject(value)) return fallback;
+      // Take each saved setting only if it has the default's type, so settings added in later
+      // versions get their default and damaged values can't crash the app.
+      const merged: Record<string, unknown> = { ...fallback };
+      for (const k of Object.keys(fallback))
+        if (k in value && sameShape(value[k], fallback[k])) merged[k] = value[k];
+      return merged as T;
+    }
+    return sameShape(value, fallback) ? (value as T) : fallback;
   } catch {
     return fallback;
+  }
+}
+
+/** Same JSON type: arrays only match arrays, objects only objects, and so on. */
+function sameShape(value: unknown, like: unknown): boolean {
+  if (Array.isArray(like)) return Array.isArray(value);
+  if (like === null || value === null) return like === value;
+  return typeof value === typeof like && Array.isArray(value) === false;
+}
+
+/** Deletes saved values whose key starts with `prefix` (all of Redline's when empty). */
+export function clearStored(prefix = ''): void {
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith(PREFIX + prefix)) localStorage.removeItem(k);
+  } catch {
+    /* Storage unavailable: nothing to clear. */
   }
 }
 
